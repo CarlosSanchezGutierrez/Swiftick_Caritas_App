@@ -30,7 +30,7 @@ struct MockData {
         route: "Ruta Norte",
         dateString: "Hoy"
     )
-    
+
     static let summaryMetrics = [
         SummaryMetric(icon: "person.2", number: "2", title: "Pacientes"),
         SummaryMetric(icon: "list.clipboard", number: "2", title: "Consultas"),
