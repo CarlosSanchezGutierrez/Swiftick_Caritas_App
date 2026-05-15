@@ -84,7 +84,7 @@ struct NuevoPacienteView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
 
-                        campoTexto("Edad", texto: $edad, placeholder: "Ingrese la edad", teclado: .numberPad)
+                        campoTexto("Edad", texto: $edad, placeholder: "Ingrese la edad", soloNumeros: true)
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Fecha de nacimiento").fontWeight(.semibold)
@@ -106,7 +106,7 @@ struct NuevoPacienteView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
 
-                        campoTexto("Número de familiares", texto: $familiares, placeholder: "Ingrese el número", teclado: .numberPad)
+                        campoTexto("Número de familiares", texto: $familiares, placeholder: "Ingrese el número", soloNumeros: true)
                     }
                     .padding()
                     .background(Color.white)
@@ -176,21 +176,27 @@ struct NuevoPacienteView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(red: 242/255, green: 242/255, blue: 247/255))
             .navigationTitle("Nuevo Paciente")
             .navigationBarTitleDisplayMode(.inline)
         }
     }
 
     @ViewBuilder
-    private func campoTexto(_ label: String, texto: Binding<String>, placeholder: String, teclado: UIKeyboardType = .default) -> some View {
+    private func campoTexto(_ label: String, texto: Binding<String>, placeholder: String, soloNumeros: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label).fontWeight(.semibold)
-            TextField(placeholder, text: texto)
-                .keyboardType(teclado)
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            Group {
+                if soloNumeros {
+                    TextField(placeholder, text: texto)
+                        .keyboardType(.numberPad)
+                } else {
+                    TextField(placeholder, text: texto)
+                }
+            }
+            .padding()
+            .background(Color.gray.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
 

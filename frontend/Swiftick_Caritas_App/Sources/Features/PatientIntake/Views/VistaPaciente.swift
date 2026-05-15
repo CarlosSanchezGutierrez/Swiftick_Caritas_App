@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct VistaPaciente: View {
     var paciente: Paciente
