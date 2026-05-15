@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct Swiftick_Caritas_App: App {
@@ -13,5 +14,6 @@ struct Swiftick_Caritas_App: App {
         WindowGroup {
             RootView()
         }
+        .modelContainer(for: [Paciente.self, Doctor.self])
     }
 }

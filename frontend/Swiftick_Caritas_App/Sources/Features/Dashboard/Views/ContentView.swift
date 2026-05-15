@@ -63,10 +63,36 @@ struct ContentView: View {
                         }
                     }
                     .padding(.horizontal)
+
+                    // MARK: - Pacientes
+                    NavigationLink(destination: BusquedaPacientesView()) {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(AppTheme.teal.opacity(0.15))
+                                    .frame(width: 44, height: 44)
+                                Image(systemName: "person.2.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(AppTheme.teal)
+                            }
+                            Text("Pacientes")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(AppTheme.textDark)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                        .padding()
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+                    }
+                    .padding(.horizontal)
                     .padding(.bottom, 20)
                 }
             }
         }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
