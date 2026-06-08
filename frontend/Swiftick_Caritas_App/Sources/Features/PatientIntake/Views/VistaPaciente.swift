@@ -147,7 +147,7 @@ struct VistaPaciente: View {
         }
         .navigationTitle("Historial")
         .navigationDestination(isPresented: $cambiarPantalla) {
-            NuevoPacienteView()
+            NuevoPacienteView(paciente: paciente)
         }
     }
 }

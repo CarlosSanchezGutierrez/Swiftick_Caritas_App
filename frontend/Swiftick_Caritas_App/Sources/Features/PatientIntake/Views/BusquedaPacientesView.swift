@@ -17,9 +17,10 @@ struct BusquedaPacientesView: View {
 
     var pacientesFiltrados: [Paciente] {
         if busqueda.isEmpty { return pacientes }
+        let query = busqueda.lowercased()
         return pacientes.filter { paciente in
-            let nombreCompleto = "\(paciente.nombre) \(paciente.apellidoP) \(paciente.apellidoM)"
-            return nombreCompleto.localizedCaseInsensitiveContains(busqueda)
+            let nombreCompleto = "\(paciente.nombre) \(paciente.apellidoP) \(paciente.apellidoM)".lowercased()
+            return nombreCompleto.contains(query) || paciente.curp.lowercased().contains(query)
         }
     }
 
