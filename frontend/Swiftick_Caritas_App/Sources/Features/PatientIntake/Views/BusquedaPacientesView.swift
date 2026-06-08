@@ -21,6 +21,7 @@ struct BusquedaPacientesView: View {
     private var unsyncedDoctores: [Doctor]
 
     @State var busqueda = ""
+    @State private var irAgregarPaciente = false
 
     private var pendingCount: Int { unsyncedPacientes.count + unsyncedDoctores.count }
 
@@ -38,7 +39,10 @@ struct BusquedaPacientesView: View {
             HStack {
                 TextField("Buscar paciente", text: $busqueda)
                     .textFieldStyle(.roundedBorder)
-                NavigationLink(destination: NuevoPacienteView()) {
+                NavigationLink(destination: NuevoPacienteView(), isActive: $irAgregarPaciente) { EmptyView() }
+                Button {
+                    irAgregarPaciente = true
+                } label: {
                     Image(systemName: "plus")
                         .font(.largeTitle)
                         .fontWeight(.bold)
