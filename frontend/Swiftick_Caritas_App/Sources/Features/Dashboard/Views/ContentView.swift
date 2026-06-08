@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
@@ -41,11 +42,19 @@ struct ContentView: View {
 
                     // MARK: - Header
                     VStack(alignment: .leading, spacing: 12) {
-                        Image("logo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 45)
-                            .padding(.top, 10)
+                        if UIImage(named: "logo") != nil {
+                            Image("logo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 45)
+                                .padding(.top, 10)
+                        } else {
+                            Text("Swiftick Caritas")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(AppTheme.teal)
+                                .padding(.top, 10)
+                        }
 
                         HStack {
                             Text("Sistema de Brigadas Médicas")
