@@ -15,14 +15,11 @@ struct ContentView: View {
     let currentBrigade = MockData.currentBrigade
 
     @Query private var allPacientes: [Paciente]
+    @Query private var allDoctores: [Doctor]
 
-    @Query(filter: #Predicate<Paciente> { !$0.isSynced })
-    private var unsyncedPacientes: [Paciente]
-
-    @Query(filter: #Predicate<Doctor> { !$0.isSynced })
-    private var unsyncedDoctores: [Doctor]
-
-    private var pendingCount: Int { unsyncedPacientes.count + unsyncedDoctores.count }
+    private var pendingCount: Int {
+        allPacientes.filter { !$0.isSynced }.count + allDoctores.filter { !$0.isSynced }.count
+    }
 
     private var summaryMetrics: [SummaryMetric] {
         [

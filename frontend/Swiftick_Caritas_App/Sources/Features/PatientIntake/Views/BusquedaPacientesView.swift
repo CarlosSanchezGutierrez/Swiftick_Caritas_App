@@ -14,16 +14,14 @@ struct BusquedaPacientesView: View {
     @Query(sort: \Paciente.nombre, order: .forward)
     var pacientes: [Paciente]
 
-    @Query(filter: #Predicate<Paciente> { !$0.isSynced })
-    private var unsyncedPacientes: [Paciente]
-
-    @Query(filter: #Predicate<Doctor> { !$0.isSynced })
-    private var unsyncedDoctores: [Doctor]
+    @Query var allDoctores: [Doctor]
 
     @State var busqueda = ""
     @State private var irAgregarPaciente = false
 
-    private var pendingCount: Int { unsyncedPacientes.count + unsyncedDoctores.count }
+    private var pendingCount: Int {
+        pacientes.filter { !$0.isSynced }.count + allDoctores.filter { !$0.isSynced }.count
+    }
 
     var pacientesFiltrados: [Paciente] {
         if busqueda.isEmpty { return pacientes }
