@@ -2,17 +2,18 @@
 //  Swiftick_Caritas_AppApp.swift
 //  Swiftick_Caritas_App
 //
-//  Created by Alumno on 23/04/26.
-//
 
 import SwiftUI
 import SwiftData
 
 @main
 struct Swiftick_Caritas_App: App {
+    @StateObject private var appState = AppState()
+
     var body: some Scene {
         WindowGroup {
             RootView()
+                .environmentObject(appState)
         }
         .modelContainer(for: [Paciente.self, Doctor.self])
     }
