@@ -310,6 +310,7 @@ struct NuevoPacienteView: View {
             existente.curp = curp.isEmpty ? "Sin CURP" : curp
             existente.familiares = intFam
             existente.firmaPrivacidad = firmaPrivacidad
+            existente.isSynced = false
         } else {
             let nuevo = Paciente(
                 nombre: nombre, apellidoP: apellidoP, apellidoM: apellidoM,
