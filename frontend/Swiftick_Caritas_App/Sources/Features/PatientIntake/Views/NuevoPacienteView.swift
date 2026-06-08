@@ -24,6 +24,12 @@ struct NuevoPacienteView: View {
     @State private var curp = ""
     @State private var familiares = ""
 
+    @State private var calle = ""
+    @State private var colonia = ""
+    @State private var municipio = ""
+    @State private var estado = ""
+    @State private var cp = ""
+
     @State private var nombreDoc = ""
     @State private var apellidoPDOC = ""
     @State private var apellidoMDOC = ""
@@ -93,6 +99,7 @@ struct NuevoPacienteView: View {
         ScrollView {
             VStack(spacing: 5) {
                 pacienteSection
+                domicilioSection
                 doctorSection
 
                 if !mensajeError.isEmpty {
@@ -180,6 +187,26 @@ struct NuevoPacienteView: View {
             }
 
             campoTexto("Número de familiares", texto: $familiares, placeholder: "Ingrese el número", soloNumeros: true, error: errorFamiliares)
+        }
+        .padding()
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(radius: 5)
+    }
+
+    // MARK: - Domicilio Section
+
+    private var domicilioSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Domicilio")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            campoTexto("Calle y número", texto: $calle, placeholder: "Ej. Av. Insurgentes 123")
+            campoTexto("Colonia", texto: $colonia, placeholder: "Ingrese la colonia")
+            campoTexto("Municipio", texto: $municipio, placeholder: "Ingrese el municipio")
+            campoTexto("Estado", texto: $estado, placeholder: "Ingrese el estado")
+            campoTexto("Código postal", texto: $cp, placeholder: "Ingrese el CP", soloNumeros: true)
         }
         .padding()
         .background(Color.white)
@@ -277,6 +304,11 @@ struct NuevoPacienteView: View {
         curp = p.curp == "Sin CURP" ? "" : p.curp
         familiares = "\(p.familiares)"
         firmaPrivacidad = p.firmaPrivacidad
+        calle = p.calle
+        colonia = p.colonia
+        municipio = p.municipio
+        estado = p.estado
+        cp = p.cp
     }
 
     private func validarFormulario() -> Bool {
@@ -310,6 +342,11 @@ struct NuevoPacienteView: View {
             existente.curp = curp.isEmpty ? "Sin CURP" : curp
             existente.familiares = intFam
             existente.firmaPrivacidad = firmaPrivacidad
+            existente.calle = calle
+            existente.colonia = colonia
+            existente.municipio = municipio
+            existente.estado = estado
+            existente.cp = cp
             existente.isSynced = false
         } else {
             let nuevo = Paciente(
@@ -318,6 +355,11 @@ struct NuevoPacienteView: View {
                 familiares: intFam, curp: curp
             )
             nuevo.firmaPrivacidad = firmaPrivacidad
+            nuevo.calle = calle
+            nuevo.colonia = colonia
+            nuevo.municipio = municipio
+            nuevo.estado = estado
+            nuevo.cp = cp
             modelContext.insert(nuevo)
         }
         try? modelContext.save()
