@@ -2,15 +2,35 @@
 //  ContentView.swift
 //  Swiftick_Caritas_App
 //
-//  Created by Alumno on 23/04/26.
-//
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
-    // Fetching our hardcoded mock data
+    @EnvironmentObject var appState: AppState
+    @Environment(\.modelContext) var modelContext
+    @StateObject private var patientVM = PatientIntakeViewModel()
+
     let currentBrigade = MockData.currentBrigade
-    let summaryMetrics = MockData.summaryMetrics
+
+    @Query private var allPacientes: [Paciente]
+
+    @Query(filter: #Predicate<Paciente> { !$0.isSynced })
+    private var unsyncedPacientes: [Paciente]
+
+    @Query(filter: #Predicate<Doctor> { !$0.isSynced })
+    private var unsyncedDoctores: [Doctor]
+
+    private var pendingCount: Int { unsyncedPacientes.count + unsyncedDoctores.count }
+
+    private var summaryMetrics: [SummaryMetric] {
+        [
+            SummaryMetric(icon: "person.2",           number: "\(allPacientes.count)", title: "Pacientes"),
+            SummaryMetric(icon: "list.clipboard",      number: "0",                    title: "Consultas"),
+            SummaryMetric(icon: "waveform.path.ecg",   number: "0",                    title: "Servicios"),
+            SummaryMetric(icon: "mappin",              number: "1",                    title: "Comunidades")
+        ]
+    }
 
     var body: some View {
         ZStack {
@@ -20,26 +40,36 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 20) {
 
                     // MARK: - Header
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Image("logo")
                             .resizable()
                             .scaledToFit()
                             .frame(height: 45)
                             .padding(.top, 10)
 
-                        Text("Sistema de Brigadas Médicas")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(AppTheme.textDark.opacity(0.8))
+                        HStack {
+                            Text("Sistema de Brigadas Médicas")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(AppTheme.textDark.opacity(0.8))
+                            Spacer()
+                            ConnectivityStatusView(
+                                appState: appState,
+                                pendingCount: pendingCount,
+                                onSync: {
+                                    Task {
+                                        await patientVM.syncAll(context: modelContext, appState: appState)
+                                    }
+                                }
+                            )
+                        }
                     }
                     .padding(.horizontal)
 
                     Divider()
 
-                    //Active Brigade Card Component
                     ActiveBrigadeCardView(info: currentBrigade)
                         .padding(.horizontal)
 
-                    //Summary Section Title
                     Text("Resumen")
                         .font(.title2)
                         .fontWeight(.bold)
@@ -47,16 +77,11 @@ struct ContentView: View {
                         .padding(.horizontal)
                         .padding(.top, 10)
 
-                    //Summary Grid Alternative
                     VStack(spacing: 16) {
-
-                        // Top Row (Index 0 and 1)
                         HStack(spacing: 16) {
                             SummaryCardView(metric: summaryMetrics[0])
                             SummaryCardView(metric: summaryMetrics[1])
                         }
-
-                        // Bottom Row (Index 2 and 3)
                         HStack(spacing: 16) {
                             SummaryCardView(metric: summaryMetrics[2])
                             SummaryCardView(metric: summaryMetrics[3])
@@ -79,6 +104,15 @@ struct ContentView: View {
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(AppTheme.textDark)
                             Spacer()
+                            if pendingCount > 0 {
+                                Text("\(pendingCount)")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(Color.orange)
+                                    .clipShape(Capsule())
+                            }
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.gray)
                         }
@@ -98,4 +132,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .modelContainer(for: [Paciente.self, Doctor.self], inMemory: true)
+        .environmentObject(AppState())
 }
