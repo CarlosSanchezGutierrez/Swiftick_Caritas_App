@@ -39,7 +39,6 @@ struct BusquedaPacientesView: View {
             HStack {
                 TextField("Buscar paciente", text: $busqueda)
                     .textFieldStyle(.roundedBorder)
-                NavigationLink(destination: NuevoPacienteView(), isActive: $irAgregarPaciente) { EmptyView() }
                 Button {
                     irAgregarPaciente = true
                 } label: {
@@ -53,9 +52,7 @@ struct BusquedaPacientesView: View {
 
             List {
                 ForEach(pacientesFiltrados) { paciente in
-                    NavigationLink {
-                        VistaPaciente(paciente: paciente)
-                    } label: {
+                    NavigationLink(value: paciente) {
                         VStack(alignment: .leading) {
                             Text("\(paciente.nombre) \(paciente.apellidoP) \(paciente.apellidoM)")
                                 .font(.title3)
@@ -73,6 +70,12 @@ struct BusquedaPacientesView: View {
                         }
                     }
                 }
+            }
+            .navigationDestination(for: Paciente.self) { paciente in
+                VistaPaciente(paciente: paciente)
+            }
+            .navigationDestination(isPresented: $irAgregarPaciente) {
+                NuevoPacienteView()
             }
         }
         .navigationTitle("Pacientes")
