@@ -21,7 +21,6 @@ struct BusquedaPacientesView: View {
     private var unsyncedDoctores: [Doctor]
 
     @State var busqueda = ""
-    @State var cambiarPantalla = false
 
     private var pendingCount: Int { unsyncedPacientes.count + unsyncedDoctores.count }
 
@@ -39,9 +38,7 @@ struct BusquedaPacientesView: View {
             HStack {
                 TextField("Buscar paciente", text: $busqueda)
                     .textFieldStyle(.roundedBorder)
-                Button {
-                    cambiarPantalla = true
-                } label: {
+                NavigationLink(destination: NuevoPacienteView()) {
                     Image(systemName: "plus")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -73,9 +70,6 @@ struct BusquedaPacientesView: View {
                     }
                 }
             }
-        }
-        .navigationDestination(isPresented: $cambiarPantalla) {
-            NuevoPacienteView()
         }
         .navigationTitle("Pacientes")
         .padding()
