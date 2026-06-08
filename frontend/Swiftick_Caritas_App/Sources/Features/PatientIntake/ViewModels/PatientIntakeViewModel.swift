@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftData
+import Combine
 
 private extension DateFormatter {
     static let apiDate: DateFormatter = {
