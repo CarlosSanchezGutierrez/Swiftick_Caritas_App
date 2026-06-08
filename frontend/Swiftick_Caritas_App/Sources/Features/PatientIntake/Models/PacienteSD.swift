@@ -20,6 +20,7 @@ class Paciente {
     var curp: String
     var familiares: Int
     var firmaPrivacidad: Bool
+    var isSynced: Bool = false
 
     init(nombre: String, apellidoP: String, apellidoM: String, genero: String, edad: Int, fechaNac: Date, familiares: Int, curp: String) {
         self.nombre = nombre
