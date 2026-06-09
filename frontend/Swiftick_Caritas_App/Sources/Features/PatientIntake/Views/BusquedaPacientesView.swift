@@ -50,7 +50,9 @@ struct BusquedaPacientesView: View {
 
             List {
                 ForEach(pacientesFiltrados) { paciente in
-                    NavigationLink(value: paciente) {
+                    NavigationLink {
+                        VistaPaciente(paciente: paciente)
+                    } label: {
                         VStack(alignment: .leading) {
                             Text("\(paciente.nombre) \(paciente.apellidoP) \(paciente.apellidoM)")
                                 .font(.title3)
@@ -69,12 +71,9 @@ struct BusquedaPacientesView: View {
                     }
                 }
             }
-            .navigationDestination(for: Paciente.self) { paciente in
-                VistaPaciente(paciente: paciente)
-            }
-            .navigationDestination(isPresented: $irAgregarPaciente) {
-                NuevoPacienteView()
-            }
+        }
+        .navigationDestination(isPresented: $irAgregarPaciente) {
+            NuevoPacienteView()
         }
         .navigationTitle("Pacientes")
         .padding()
