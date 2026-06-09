@@ -9,14 +9,14 @@ import SwiftData
 struct RootView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.modelContext) var modelContext
-    @StateObject private var lugaresVM = lugaresVM()
+    @StateObject private var lugares = lugaresVM()
 
     var body: some View {
         NavigationStack {
             ContentView()
         }
         .task {
-            await lugaresVM.syncCatalogo(context: modelContext)
+            await lugares.syncCatalogo(context: modelContext)
         }
     }
 }
