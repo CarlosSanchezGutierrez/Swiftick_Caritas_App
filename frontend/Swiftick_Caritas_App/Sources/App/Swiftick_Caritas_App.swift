@@ -14,6 +14,7 @@ struct Swiftick_Caritas_App: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environment(\.font, .custom("Gotham Regular", size: 16))
         }
         .modelContainer(for: [
             Paciente.self, Doctor.self,
