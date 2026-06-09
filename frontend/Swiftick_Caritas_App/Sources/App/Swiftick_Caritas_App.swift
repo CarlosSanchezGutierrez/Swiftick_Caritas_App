@@ -15,6 +15,10 @@ struct Swiftick_Caritas_App: App {
             RootView()
                 .environmentObject(appState)
         }
-        .modelContainer(for: [Paciente.self, Doctor.self])
+        .modelContainer(for: [
+            Paciente.self, Doctor.self,
+            paisLocal.self, estadoLocal.self, municipioLocal.self, ciudadLocal.self,
+            domicilioLocal.self
+        ])
     }
 }

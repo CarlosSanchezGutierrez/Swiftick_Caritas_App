@@ -20,12 +20,13 @@ class Paciente {
     var curp: String
     var familiares: Int
     var firmaPrivacidad: Bool
+    var pais: String = ""
+    var estado: String = ""
+    var municipio: String = ""
+    var ciudad: String = ""
+    var ciudadID: Int = 0
     var calle: String = ""
     var numCasa: String = ""
-    var ciudad: String = ""
-    var municipio: String = ""
-    var estado: String = ""
-    var pais: String = ""
     var isSynced: Bool = false
 
     init(nombre: String, apellidoP: String, apellidoM: String, genero: String, edad: Int, fechaNac: Date, familiares: Int, curp: String) {

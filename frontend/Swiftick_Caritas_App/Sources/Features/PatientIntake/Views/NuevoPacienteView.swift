@@ -28,8 +28,24 @@ struct NuevoPacienteView: View {
     @State private var estado = ""
     @State private var municipio = ""
     @State private var ciudad = ""
+    @State private var ciudadID = 0
     @State private var calle = ""
     @State private var numCasa = ""
+
+    @Query(sort: \paisLocal.nombre) private var paises: [paisLocal]
+
+    private var estadosFiltrados: [estadoLocal] {
+        (paises.first { $0.nombre == pais }?.estados ?? [])
+            .sorted { $0.nombre < $1.nombre }
+    }
+    private var municipiosFiltrados: [municipioLocal] {
+        (estadosFiltrados.first { $0.nombre == estado }?.municipios ?? [])
+            .sorted { $0.nombre < $1.nombre }
+    }
+    private var ciudadesFiltradas: [ciudadLocal] {
+        (municipiosFiltrados.first { $0.nombre == municipio }?.ciudades ?? [])
+            .sorted { $0.nombre < $1.nombre }
+    }
 
     @State private var nombreDoc = ""
     @State private var apellidoPDOC = ""
@@ -252,12 +268,36 @@ struct NuevoPacienteView: View {
                 .font(.title2)
                 .fontWeight(.bold)
 
-            campoTexto("País", texto: $pais, placeholder: "Ej. México")
-            campoTexto("Estado", texto: $estado, placeholder: "Ej. Nuevo León")
-            campoTexto("Municipio", texto: $municipio, placeholder: "Ej. Monterrey")
-            campoTexto("Ciudad", texto: $ciudad, placeholder: "Ej. Monterrey")
-            campoTexto("Calle", texto: $calle, placeholder: "Ej. Av. Insurgentes")
-            campoTexto("Número de casa", texto: $numCasa, placeholder: "Ej. 123", soloNumeros: true)
+            campoPicker("País", selection: $pais, opciones: paises.map(\.nombre))
+                .onChange(of: pais) {
+                    estado = ""; municipio = ""; ciudad = ""; ciudadID = 0
+                }
+
+            if !pais.isEmpty {
+                campoPicker("Estado", selection: $estado, opciones: estadosFiltrados.map(\.nombre))
+                    .onChange(of: estado) {
+                        municipio = ""; ciudad = ""; ciudadID = 0
+                    }
+            }
+
+            if !estado.isEmpty {
+                campoPicker("Municipio", selection: $municipio, opciones: municipiosFiltrados.map(\.nombre))
+                    .onChange(of: municipio) {
+                        ciudad = ""; ciudadID = 0
+                    }
+            }
+
+            if !municipio.isEmpty {
+                campoPicker("Ciudad", selection: $ciudad, opciones: ciudadesFiltradas.map(\.nombre))
+                    .onChange(of: ciudad) {
+                        ciudadID = ciudadesFiltradas.first { $0.nombre == ciudad }?.id ?? 0
+                    }
+            }
+
+            if !ciudad.isEmpty {
+                campoTexto("Calle", texto: $calle, placeholder: "Ej. Av. Insurgentes")
+                campoTexto("Número de casa", texto: $numCasa, placeholder: "Ej. 123", soloNumeros: true)
+            }
         }
         .padding()
         .background(Color.white)
@@ -320,6 +360,26 @@ struct NuevoPacienteView: View {
     }
 
     @ViewBuilder
+    private func campoPicker(
+        _ label: String,
+        selection: Binding<String>,
+        opciones: [String]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label).fontWeight(.semibold)
+            Picker(label, selection: selection) {
+                Text("Seleccionar").tag("")
+                ForEach(opciones, id: \.self) { Text($0).tag($0) }
+            }
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(Color.gray.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }
+
+    @ViewBuilder
     private func campoTexto(
         _ label: String,
         texto: Binding<String>,
@@ -359,6 +419,7 @@ struct NuevoPacienteView: View {
         estado = p.estado
         municipio = p.municipio
         ciudad = p.ciudad
+        ciudadID = p.ciudadID
         calle = p.calle
         numCasa = p.numCasa
     }
@@ -398,6 +459,7 @@ struct NuevoPacienteView: View {
             existente.estado = estado
             existente.municipio = municipio
             existente.ciudad = ciudad
+            existente.ciudadID = ciudadID
             existente.calle = calle
             existente.numCasa = numCasa
             existente.isSynced = false
@@ -412,6 +474,7 @@ struct NuevoPacienteView: View {
             nuevo.estado = estado
             nuevo.municipio = municipio
             nuevo.ciudad = ciudad
+            nuevo.ciudadID = ciudadID
             nuevo.calle = calle
             nuevo.numCasa = numCasa
             modelContext.insert(nuevo)
