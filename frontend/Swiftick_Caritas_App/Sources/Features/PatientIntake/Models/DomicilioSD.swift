@@ -24,8 +24,20 @@ class domicilioLocal {
     }
 }
 
+struct Domicilio: Codable {
+    let id: Int
+    let ciudadID: Int
+    let calle: String
+    let numCasa: Int
+}
+
 struct nuevoDomicilio: Codable {
     let ciudadID: Int
     let calle: String
     let numCasa: Int
+}
+
+struct RespuestaDomicilio: Codable {
+    let mensaje: String
+    let id: Int
 }

@@ -8,6 +8,25 @@
 import Foundation
 import SwiftData
 
+struct DoctorAPIResponse: Codable {
+    let id: Int
+    let nombre: String
+    let apellidoP: String
+    let apellidoM: String
+    let genero: String
+    let realizandoPrac: Bool
+    let fechaNac: Date
+}
+
+struct nuevoDoctor: Codable {
+    let nombre: String
+    let apellidoP: String
+    let apellidoM: String
+    let genero: String
+    let realizandoPrac: Bool
+    let fechaNac: Date
+}
+
 @Model
 class Doctor {
     var doctorID = UUID()

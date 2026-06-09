@@ -7,8 +7,8 @@ import Foundation
 import SwiftData
 import Combine
 
-private extension DateFormatter {
-    static let apiDate: DateFormatter = {
+extension DateFormatter {
+    static let iso8601Full: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
@@ -71,7 +71,7 @@ final class PatientIntakeViewModel: ObservableObject {
             "apellidoM": doctor.apellidoM,
             "genero": doctor.genero,
             "realizandoPrac": doctor.realizandoPrac,
-            "fechaNac": DateFormatter.apiDate.string(from: doctor.fechaNac)
+            "fechaNac": DateFormatter.iso8601Full.string(from: doctor.fechaNac)
         ]
 
         var request = URLRequest(url: url)
@@ -100,7 +100,7 @@ final class PatientIntakeViewModel: ObservableObject {
             "apellidoM": paciente.apellidoM,
             "genero": paciente.genero,
             "edad": paciente.edad,
-            "fechaNac": DateFormatter.apiDate.string(from: paciente.fechaNac),
+            "fechaNac": DateFormatter.iso8601Full.string(from: paciente.fechaNac),
             "curp": paciente.curp,
             "familiares": paciente.familiares,
             "firmaPriv": paciente.firmaPrivacidad,
