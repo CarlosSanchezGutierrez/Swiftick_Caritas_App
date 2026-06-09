@@ -6,6 +6,59 @@
 import Foundation
 import SwiftData
 
+// MARK: - API structs
+
+struct Pais: Codable, Identifiable {
+    let id: Int
+    let nombre: String
+}
+
+struct nuevoPais: Codable {
+    let nombre: String
+}
+
+struct Estado: Codable, Identifiable {
+    let id: Int
+    let paisID: Int
+    let nombre: String
+}
+
+struct nuevoEstado: Codable {
+    let paisID: Int
+    let nombre: String
+}
+
+struct Municipio: Codable, Identifiable {
+    let id: Int
+    let estadoID: Int
+    let nombre: String
+}
+
+struct nuevoMunicipio: Codable {
+    let estadoID: Int
+    let nombre: String
+}
+
+struct Ciudad: Codable, Identifiable {
+    let id: Int
+    let municipioID: Int
+    let nombre: String
+}
+
+struct nuevaCiudad: Codable {
+    let municipioID: Int
+    let nombre: String
+}
+
+struct CatalogoSync: Codable {
+    let paises: [Pais]
+    let estados: [Estado]
+    let municipios: [Municipio]
+    let ciudades: [Ciudad]
+}
+
+// MARK: - SwiftData models
+
 @Model
 class paisLocal {
     @Attribute(.unique) var localID: UUID = UUID()
