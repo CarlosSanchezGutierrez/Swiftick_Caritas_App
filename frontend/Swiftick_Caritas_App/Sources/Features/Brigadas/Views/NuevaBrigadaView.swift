@@ -42,7 +42,7 @@ struct NuevaBrigadaView: View {
                         .datePickerStyle(.compact)
                         .labelsHidden()
                         .padding()
-                        .background(Color.gray.opacity(0.1))
+                        //.background(Color.gray.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
 

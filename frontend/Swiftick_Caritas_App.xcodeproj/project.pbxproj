@@ -10,9 +10,22 @@
 		FB75DAB72F9AD2820001CB33 /* Swiftick_Caritas_App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Swiftick_Caritas_App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B33B225C2FDA1C3F00433583 /* Exceptions for "Swiftick_Caritas_App" folder in "Swiftick_Caritas_App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FB75DAB62F9AD2820001CB33 /* Swiftick_Caritas_App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FB75DAB92F9AD2820001CB33 /* Swiftick_Caritas_App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B33B225C2FDA1C3F00433583 /* Exceptions for "Swiftick_Caritas_App" folder in "Swiftick_Caritas_App" target */,
+			);
 			path = Swiftick_Caritas_App;
 			sourceTree = "<group>";
 		};
