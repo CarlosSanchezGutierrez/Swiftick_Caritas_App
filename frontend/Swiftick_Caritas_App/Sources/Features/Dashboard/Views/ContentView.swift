@@ -12,7 +12,9 @@ struct ContentView: View {
     @Environment(\.modelContext) var modelContext
     @StateObject private var patientVM = PatientIntakeViewModel()
 
-    let currentBrigade = MockData.currentBrigade
+    private var currentBrigade: BrigadeInfo {
+        appState.brigadaActiva?.brigadeInfo ?? MockData.currentBrigade
+    }
 
     @Query private var allPacientes: [Paciente]
     @Query private var allDoctores: [Doctor]

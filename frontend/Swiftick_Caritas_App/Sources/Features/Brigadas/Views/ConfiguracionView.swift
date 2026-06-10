@@ -6,17 +6,7 @@
 import SwiftUI
 
 struct ConfiguracionView: View {
-    @State private var brigadas: [Brigada] = [
-        Brigada(nombre: "San Bernabé", tipo: "Médica Integral", ruta: "Norte", servicios: [
-            "Consulta General", "Odontología", "Entrega de medicamentos"
-        ]),
-        Brigada(nombre: "Valle de las Salinas", tipo: "Médica General", ruta: "Sur", servicios: [
-            "Consulta General", "Entrega de medicamentos"
-        ]),
-        Brigada(nombre: "Monterrey", tipo: "Médica General", ruta: "Centro", servicios: [
-            "Consulta General", "Odontología", "Entrega de medicamentos"
-        ]),
-    ]
+    @EnvironmentObject var appState: AppState
     @State private var irNuevaBrigada = false
 
     var body: some View {
@@ -42,16 +32,22 @@ struct ConfiguracionView: View {
             .padding()
 
             List {
-                ForEach(brigadas) { brigada in
+                ForEach(appState.brigadas) { brigada in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(brigada.nombre)
                                 .font(.gotham(.bold, size: 22))
                             Spacer()
-                            Button("Activar") {}
-                                .font(.gotham(.bold, size: 16))
-                                .buttonStyle(.borderedProminent)
-                                .tint(Color(red: 0/255, green: 156/255, blue: 166/255))
+                            let esActiva = appState.brigadaActiva?.id == brigada.id
+                            Button(esActiva ? "Activa" : "Activar") {
+                                appState.brigadaActiva = brigada
+                            }
+                            .font(.gotham(.bold, size: 16))
+                            .buttonStyle(.borderedProminent)
+                            .tint(esActiva
+                                  ? Color(red: 0/255, green: 156/255, blue: 166/255)
+                                  : .gray)
+                            .disabled(esActiva)
                         }
                         Text("Brigada \(brigada.tipo)")
                             .font(.gotham(.thin, size: 18))
@@ -97,4 +93,5 @@ private struct FlowLayout: View {
 
 #Preview {
     NavigationStack { ConfiguracionView() }
+        .environmentObject(AppState())
 }

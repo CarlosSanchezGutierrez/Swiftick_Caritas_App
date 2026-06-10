@@ -12,4 +12,13 @@ struct Brigada: Identifiable {
     var fecha: Date = Date()
     var ruta: String = ""
     var servicios: [String] = []
+
+    var brigadeInfo: BrigadeInfo {
+        BrigadeInfo(
+            title: nombre,
+            subtitle: "Brigada \(tipo)",
+            route: "Ruta \(ruta)",
+            dateString: fecha.formatted(date: .abbreviated, time: .omitted)
+        )
+    }
 }
