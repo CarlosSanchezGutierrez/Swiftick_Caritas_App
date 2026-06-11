@@ -30,6 +30,8 @@ final class PatientIntakeViewModel: ObservableObject {
 
         await syncDoctors(context: context)
         await syncPacientes(context: context)
+        patchConsultaPacienteIDs(context: context)
+        await syncConsultas(context: context)
     }
 
     // MARK: - Private sync steps
@@ -136,6 +138,47 @@ final class PatientIntakeViewModel: ObservableObject {
         } catch {
             return false
         }
+    }
+
+    // After syncPacientes gives patients real dbIDs, backfill any consulta
+    // that was saved while the patient was still unsynced (pacienteID == 0).
+    private func patchConsultaPacienteIDs(context: ModelContext) {
+        guard let consultas = try? context.fetch(FetchDescriptor<ConsultaLocal>()),
+              let pacientes = try? context.fetch(FetchDescriptor<Paciente>()) else { return }
+        let map = Dictionary(uniqueKeysWithValues: pacientes.map { ($0.pacienteID.uuidString, $0.dbID) })
+        var changed = false
+        for c in consultas where !c.isSynced && c.pacienteID == 0 {
+            if let dbID = map[c.localPacienteID], dbID > 0 {
+                c.pacienteID = dbID
+                changed = true
+            }
+        }
+        if changed { try? context.save() }
+    }
+
+    private func syncConsultas(context: ModelContext) async {
+        guard let unsynced = try? context.fetch(
+            FetchDescriptor<ConsultaLocal>(predicate: #Predicate { !$0.isSynced })
+        ) else { return }
+        let vm = consultaVM()
+        for consulta in unsynced where consulta.pacienteID > 0 {
+            if let id = await vm.addServicio(
+                pacienteID: consulta.pacienteID,
+                doctorID: consulta.doctorID,
+                brigadaID: consulta.brigadaID,
+                signosID: consulta.signosID ?? 0,
+                medicamentosID: consulta.medicamentosID ?? 0,
+                cantMedicina: consulta.cantMedicina,
+                tipoServicio: consulta.tipoServicio,
+                fechaServicio: consulta.fechaServicio,
+                imss: consulta.imss,
+                tipoPaciente: consulta.tipoPaciente
+            ) {
+                consulta.id = id
+                consulta.isSynced = true
+            }
+        }
+        try? context.save()
     }
 
     private func createDomicilio(ciudadID: Int, calle: String, numCasa: Int) async -> Int? {
