@@ -28,6 +28,7 @@ struct NuevaBrigadaView: View {
     @State private var dental = false
 
     @State private var errorNombre = false
+    @State private var intentoGuardar = false
 
     private var serviciosSeleccionados: [String] {
         var s: [String] = []
@@ -36,6 +37,15 @@ struct NuevaBrigadaView: View {
         if medicamentos { s.append("Entrega de Medicamentos") }
         if optometria   { s.append("Optometría") }
         return s
+    }
+
+    private var formularioValido: Bool {
+        !nombre.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !tipo.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !ruta.trimmingCharacters(in: .whitespaces).isEmpty &&
+        doctorSeleccionado != nil &&
+        ciudadSeleccionada != nil &&
+        !serviciosSeleccionados.isEmpty
     }
 
     var body: some View {
@@ -97,13 +107,16 @@ struct NuevaBrigadaView: View {
                     Toggle("Consulta General",        isOn: $general)
                     Toggle("Entrega de Medicamentos", isOn: $medicamentos)
                     Toggle("Consulta Dental",         isOn: $dental)
+                    if intentoGuardar && serviciosSeleccionados.isEmpty {
+                        Text("Selecciona al menos un servicio")
+                            .foregroundStyle(.red).font(.caption)
+                    }
                 }
                 .tint(Color(red: 0/255, green: 156/255, blue: 166/255))
 
                 Button {
-                    guard !nombre.trimmingCharacters(in: .whitespaces).isEmpty else {
-                        errorNombre = true; return
-                    }
+                    intentoGuardar = true
+                    guard formularioValido else { return }
 
                     var nueva = Brigada(
                         nombre: nombre, tipo: tipo,
@@ -155,8 +168,11 @@ struct NuevaBrigadaView: View {
                 }
                 .padding()
                 .foregroundStyle(.white)
-                .background(Color(red: 0/255, green: 156/255, blue: 166/255))
+                .background(formularioValido
+                    ? Color(red: 0/255, green: 156/255, blue: 166/255)
+                    : Color.gray)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .disabled(!formularioValido)
             }
             .padding(40)
         }
