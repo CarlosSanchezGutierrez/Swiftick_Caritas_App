@@ -1053,7 +1053,22 @@ def actualizar_signosfisicos(paciente_id: int, signosfisicos: signosFisicos):
 ## Doctores
 ## ---------------------------------------------------------------
 
-#1 Obtener doctor por id
+# 1. Obtener todos los doctores
+@app.get("/doctores", response_model=List[Doctor])
+def obtener_doctores():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM Doctor")
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+#2 Obtener doctor por id
 @app.get("/doctores/{doctor_id}", response_model=Doctor)
 def get_doctor(doctor_id: int):
     conn = get_db_connection()

@@ -10,6 +10,7 @@ struct RootView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.modelContext) var modelContext
     @StateObject private var lugares = lugaresVM()
+    @StateObject private var doctores = doctorVM()
 
     var body: some View {
         NavigationStack {
@@ -17,6 +18,7 @@ struct RootView: View {
         }
         .task {
             await lugares.syncCatalogo(context: modelContext)
+            await doctores.syncDoctores(context: modelContext)
         }
     }
 }

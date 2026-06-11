@@ -69,6 +69,34 @@ class doctorVM: ObservableObject {
         }
     }
 
+    @MainActor
+    func syncDoctores(context: ModelContext) async {
+        guard let url = URL(string: baseUrl) else { return }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .formatted(DateFormatter.iso8601Full)
+            let remoteDoctores = try decoder.decode([DoctorAPIResponse].self, from: data)
+
+            let all = (try? context.fetch(FetchDescriptor<Doctor>())) ?? []
+            for d in all where d.isSynced { context.delete(d) }
+
+            for remote in remoteDoctores {
+                let doctor = Doctor(
+                    nombre: remote.nombre, apellidoP: remote.apellidoP,
+                    apellidoM: remote.apellidoM, genero: remote.genero,
+                    fechaNac: remote.fechaNac, realizandoPrac: remote.realizandoPrac
+                )
+                doctor.dbID = remote.id
+                doctor.isSynced = true
+                context.insert(doctor)
+            }
+            try? context.save()
+        } catch {
+            print("syncDoctores error:", error)
+        }
+    }
+
     func createDoctor(
         context: ModelContext,
         nombre: String, apellidoP: String, apellidoM: String,
