@@ -41,17 +41,20 @@ struct ContentView: View {
 
     @Query private var allPacientes: [Paciente]
     @Query private var allDoctores: [Doctor]
+    @Query private var allConsultas: [ConsultaLocal]
+    @Query private var allBrigadas: [BrigadaLocal]
 
     private var pendingCount: Int {
         allPacientes.filter { !$0.isSynced }.count + allDoctores.filter { !$0.isSynced }.count
     }
 
     private var summaryMetrics: [SummaryMetric] {
+        let comunidades = Set(allBrigadas.compactMap { $0.colonia }).count
         [
-            SummaryMetric(icon: "person.2",           number: "\(allPacientes.count)", title: "Pacientes"),
-            SummaryMetric(icon: "list.clipboard",      number: "0",                    title: "Consultas"),
-            SummaryMetric(icon: "waveform.path.ecg",   number: "0",                    title: "Servicios"),
-            SummaryMetric(icon: "mappin",              number: "1",                    title: "Comunidades")
+            SummaryMetric(icon: "person.2",          number: "\(allPacientes.count)", title: "Pacientes"),
+            SummaryMetric(icon: "list.clipboard",     number: "\(allConsultas.count)", title: "Consultas"),
+            SummaryMetric(icon: "waveform.path.ecg",  number: "\(Set(allConsultas.map { $0.tipoServicio }).count)", title: "Servicios"),
+            SummaryMetric(icon: "mappin",             number: "\(comunidades)",        title: "Comunidades")
         ]
     }
 
@@ -336,6 +339,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Paciente.self, Doctor.self], inMemory: true)
+        .modelContainer(for: [Paciente.self, Doctor.self, ConsultaLocal.self, BrigadaLocal.self], inMemory: true)
         .environmentObject(AppState())
 }
