@@ -944,18 +944,18 @@ def crear_servicio(servicio: NuevoServicio):
 class ReporteConsulta(BaseModel):
     id: int
     pacienteID: int
-    pacienteNombre: Optional[str]
+    pacienteNombre: Optional[str] = None
     doctorID: int
-    doctorNombre: Optional[str]
+    doctorNombre: Optional[str] = None
     brigadaID: int
-    brigadaColonia: Optional[str]
-    ciudadNombre: Optional[str]
-    signosID: Optional[int]
-    cantMedicina: int
-    tipoServicio: str
-    fechaServicio: str
-    imss: bool
-    tipoPaciente: str
+    brigadaColonia: Optional[str] = None
+    ciudadNombre: Optional[str] = None
+    signosID: Optional[int] = None
+    cantMedicina: int = 0
+    tipoServicio: str = ""
+    fechaServicio: str = ""
+    imss: bool = False
+    tipoPaciente: str = ""
 
 
 @app.get("/reportes/consultas", response_model=List[ReporteConsulta])
@@ -971,13 +971,16 @@ def reporte_consultas(
     query = """
         SELECT
             s.id, s.pacienteID, s.doctorID, s.brigadaID,
-            s.signosID, s.cantMedicina, s.tipoServicio,
-            DATE_FORMAT(s.fechaServicio, '%Y-%m-%d') AS fechaServicio,
-            s.imss, s.tipoPaciente,
-            CONCAT(p.nombre, ' ', p.apellidoP, ' ', p.apellidoM) AS pacienteNombre,
-            CONCAT(d.nombre, ' ', d.apellidoP)                    AS doctorNombre,
-            b.colonia                                              AS brigadaColonia,
-            c.nombre                                               AS ciudadNombre
+            s.signosID,
+            COALESCE(s.cantMedicina, 0)                            AS cantMedicina,
+            COALESCE(s.tipoServicio, '')                           AS tipoServicio,
+            DATE_FORMAT(s.fechaServicio, '%Y-%m-%d')               AS fechaServicio,
+            s.imss,
+            COALESCE(s.tipoPaciente, '')                           AS tipoPaciente,
+            CONCAT(p.nombre, ' ', p.apellidoP, ' ', p.apellidoM)  AS pacienteNombre,
+            CONCAT(d.nombre, ' ', d.apellidoP)                     AS doctorNombre,
+            b.colonia                                               AS brigadaColonia,
+            c.nombre                                                AS ciudadNombre
         FROM Servicio s
         LEFT JOIN Pacientes p ON s.pacienteID = p.id
         LEFT JOIN Doctor    d ON s.doctorID   = d.id
@@ -986,14 +989,6 @@ def reporte_consultas(
         WHERE 1=1
     """
     params = []
-
-    if nombre:
-        if tipo == "pacientes":
-            query += " AND (p.nombre LIKE %s OR p.apellidoP LIKE %s OR p.apellidoM LIKE %s)"
-            params += [f"%{nombre}%"] * 3
-        elif tipo == "doctores":
-            query += " AND (d.nombre LIKE %s OR d.apellidoP LIKE %s)"
-            params += [f"%{nombre}%"] * 2
 
     if filtro and valor:
         if filtro == "servicio":
@@ -1012,8 +1007,12 @@ def reporte_consultas(
             query += " AND c.nombre LIKE %s"
             params.append(f"%{valor}%")
 
-    cursor.execute(query, params)
-    results = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return results
+    try:
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()

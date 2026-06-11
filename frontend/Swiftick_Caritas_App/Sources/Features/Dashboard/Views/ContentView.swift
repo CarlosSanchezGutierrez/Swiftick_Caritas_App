@@ -14,11 +14,10 @@ struct ContentView: View {
 
     // MARK: - Reporte state
     private let baseURL = "http://10.14.255.99:8000"
-    @State private var reporteTipo    = ""
-    @State private var reporteFiltro  = ""
-    @State private var reporteBusquedaPrincipal = ""
-    @State private var reporteBusquedaFiltro    = ""
-    @State private var reporteIsLoading  = false
+    @State private var reporteTipo   = ""
+    @State private var reporteFiltro = ""
+    @State private var reporteValor  = ""
+    @State private var reporteIsLoading    = false
     @State private var reporteArchivoCSV: URL? = nil
     @State private var reporteMostrarShare = false
     @State private var reporteError: String? = nil
@@ -32,7 +31,7 @@ struct ContentView: View {
     private var reporteListoParaDescargar: Bool {
         !reporteTipo.isEmpty &&
         !reporteFiltro.isEmpty &&
-        !reporteBusquedaPrincipal.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !reporteValor.trimmingCharacters(in: .whitespaces).isEmpty &&
         !reporteIsLoading
     }
 
@@ -193,24 +192,19 @@ struct ContentView: View {
                         HStack(spacing: 12) {
                             reportePickerCard(label: "Vista", selection: $reporteTipo, options: opcionesPrincipal)
                                 .onChange(of: reporteTipo) {
-                                    reporteFiltro = ""; reporteBusquedaPrincipal = ""; reporteBusquedaFiltro = ""; reporteError = nil
+                                    reporteFiltro = ""; reporteValor = ""; reporteError = nil
                                 }
                             if !reporteTipo.isEmpty {
                                 reportePickerCard(label: "Filtrar por", selection: $reporteFiltro, options: opcionesFiltro)
-                                    .onChange(of: reporteFiltro) { reporteBusquedaFiltro = ""; reporteError = nil }
+                                    .onChange(of: reporteFiltro) { reporteValor = ""; reporteError = nil }
                             }
                         }
 
                         if !reporteTipo.isEmpty && !reporteFiltro.isEmpty {
                             reporteSearchField(
-                                icon: "person.fill",
-                                placeholder: reporteTipo == "Pacientes" ? "Nombre del paciente..." : "Nombre del doctor...",
-                                text: $reporteBusquedaPrincipal
-                            )
-                            reporteSearchField(
                                 icon: "line.3.horizontal.decrease",
                                 placeholder: "Buscar \(reporteFiltro.lowercased())...",
-                                text: $reporteBusquedaFiltro
+                                text: $reporteValor
                             )
                         }
 
@@ -218,29 +212,24 @@ struct ContentView: View {
                             Text(msg).font(.caption).foregroundColor(.red)
                         }
 
-                        if reporteListoParaDescargar {
-                            Button {
-                                Task { await descargarReporte() }
-                            } label: {
-                                HStack(spacing: 8) {
-                                    if reporteIsLoading {
-                                        ProgressView().tint(.white)
-                                    } else {
-                                        Image(systemName: "arrow.down.circle.fill").font(.title3)
-                                    }
-                                    Text(reporteIsLoading ? "Generando..." : "Descargar CSV").fontWeight(.semibold)
+                        Button {
+                            Task { await descargarReporte() }
+                        } label: {
+                            HStack(spacing: 8) {
+                                if reporteIsLoading {
+                                    ProgressView().tint(.white)
+                                } else {
+                                    Image(systemName: "arrow.down.circle.fill").font(.title3)
                                 }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.blue)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Text(reporteIsLoading ? "Generando..." : "Descargar CSV").fontWeight(.semibold)
                             }
-                            .disabled(reporteIsLoading)
-                            .sheet(isPresented: $reporteMostrarShare) {
-                                if let url = reporteArchivoCSV { ShareSheet(items: [url]) }
-                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(reporteListoParaDescargar ? Color.blue : Color.gray)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
+                        .disabled(!reporteListoParaDescargar)
                     }
                     .padding()
                     .background(Color.white)
@@ -248,6 +237,9 @@ struct ContentView: View {
                     .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
                     .padding(.horizontal)
                     .padding(.bottom, 20)
+                    .sheet(isPresented: $reporteMostrarShare) {
+                        if let url = reporteArchivoCSV { ShareSheet(items: [url]) }
+                    }
                 }
             }
         }
@@ -264,21 +256,21 @@ struct ContentView: View {
         var components = URLComponents(string: "\(baseURL)/reportes/consultas")!
         components.queryItems = [
             URLQueryItem(name: "tipo",   value: reporteTipo.lowercased()),
-            URLQueryItem(name: "nombre", value: reporteBusquedaPrincipal),
             URLQueryItem(name: "filtro", value: reporteFiltro.lowercased()),
-            URLQueryItem(name: "valor",  value: reporteBusquedaFiltro)
+            URLQueryItem(name: "valor",  value: reporteValor)
         ]
         guard let url = components.url else { return }
 
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             let records = try JSONDecoder().decode([ReporteConsultaAPI].self, from: data)
-            if let fileURL = generarCSV(from: records) {
-                reporteArchivoCSV = fileURL
-                reporteMostrarShare = true
+            let fileURL = generarCSV(from: records)
+            await MainActor.run {
+                reporteArchivoCSV    = fileURL
+                reporteMostrarShare  = fileURL != nil
             }
         } catch {
-            reporteError = "Error al obtener datos del servidor."
+            await MainActor.run { reporteError = "Error al obtener datos del servidor." }
         }
     }
 
@@ -307,7 +299,6 @@ struct ContentView: View {
             try csv.write(to: fileURL, atomically: true, encoding: .utf8)
             return fileURL
         } catch {
-            reporteError = "Error al generar el archivo CSV."
             return nil
         }
     }
