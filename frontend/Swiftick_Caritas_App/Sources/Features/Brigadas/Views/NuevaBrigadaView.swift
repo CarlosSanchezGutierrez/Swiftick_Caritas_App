@@ -111,7 +111,7 @@ struct NuevaBrigadaView: View {
                         servicios: serviciosSeleccionados
                     )
 
-                    let serviciosStr = serviciosSeleccionados.joined(separator: ",")
+                    let serviciosStr = serviciosSeleccionados.count
                     let doctorID = doctorSeleccionado?.dbID ?? 0
                     let ciudadID = ciudadSeleccionada?.id ?? 0
                     let municipioID = ciudadSeleccionada?.municipio?.id ?? 0
@@ -121,7 +121,7 @@ struct NuevaBrigadaView: View {
                         _ = brigadasVM.storeBrigada(
                             context: modelContext,
                             doctorID: doctorID,
-                            serviciosDisp: serviciosStr,
+                            serviciosDisp: serviciosStr,  // count of selected services
                             fechaOp: fecha,
                             municipioID: municipioID,
                             ciudadID: ciudadID,

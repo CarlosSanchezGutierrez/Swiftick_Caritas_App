@@ -26,7 +26,7 @@ class brigadaVM: ObservableObject {
         } catch { return nil }
     }
 
-    func addBrigada(doctorID: Int, serviciosDisp: String, fechaOp: Date,
+    func addBrigada(doctorID: Int, serviciosDisp: Int, fechaOp: Date,
                     municipioID: Int, ciudadID: Int, colonia: String? = nil) async -> Int? {
         guard let url = URL(string: "\(baseURL)/brigadas") else { return nil }
         let body = NuevaBrigadaAPI(
@@ -48,7 +48,7 @@ class brigadaVM: ObservableObject {
         } catch { return nil }
     }
 
-    func storeBrigada(context: ModelContext, doctorID: Int, serviciosDisp: String,
+    func storeBrigada(context: ModelContext, doctorID: Int, serviciosDisp: Int,
                       fechaOp: Date, municipioID: Int, ciudadID: Int,
                       colonia: String? = nil) -> BrigadaLocal {
         let brigada = BrigadaLocal(
