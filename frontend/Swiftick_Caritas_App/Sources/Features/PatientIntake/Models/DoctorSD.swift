@@ -36,6 +36,7 @@ class Doctor {
     var genero: String
     var fechaNac: Date
     var realizandoPrac: Bool
+    var dbID: Int = 0
     var isSynced: Bool = false
 
     init(nombre: String, apellidoP: String, apellidoM: String, genero: String, fechaNac: Date, realizandoPrac: Bool) {

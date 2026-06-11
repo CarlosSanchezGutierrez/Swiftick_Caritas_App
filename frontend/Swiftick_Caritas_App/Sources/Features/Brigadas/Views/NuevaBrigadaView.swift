@@ -4,15 +4,23 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct NuevaBrigadaView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) var modelContext
+    @StateObject private var brigadasVM = brigadaVM()
+
+    @Query(sort: \Doctor.nombre) private var doctores: [Doctor]
+    @Query(sort: \ciudadLocal.nombre) private var todasCiudades: [ciudadLocal]
 
     @State private var fecha = Date()
     @State private var nombre = ""
     @State private var tipo = ""
     @State private var ruta = ""
+    @State private var doctorSeleccionado: Doctor? = nil
+    @State private var ciudadSeleccionada: ciudadLocal? = nil
 
     @State private var optometria = false
     @State private var general = false
@@ -42,7 +50,6 @@ struct NuevaBrigadaView: View {
                         .datePickerStyle(.compact)
                         .labelsHidden()
                         .padding()
-                        //.background(Color.gray.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
 
@@ -51,6 +58,38 @@ struct NuevaBrigadaView: View {
                 campoTexto("Tipo de Brigada", binding: $tipo,
                            placeholder: "Ej: Médica Integral")
                 campoTexto("Ruta", binding: $ruta, placeholder: "Ej: Norte")
+
+                // Doctor picker
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Doctor Responsable").font(.gotham(.medium, size: 18))
+                    Picker("Doctor", selection: $doctorSeleccionado) {
+                        Text("Seleccionar...").tag(nil as Doctor?)
+                        ForEach(doctores) { doc in
+                            Text("\(doc.nombre) \(doc.apellidoP)").tag(doc as Doctor?)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                // Ciudad picker
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ciudad").font(.gotham(.medium, size: 18))
+                    Picker("Ciudad", selection: $ciudadSeleccionada) {
+                        Text("Seleccionar...").tag(nil as ciudadLocal?)
+                        ForEach(todasCiudades) { ciudad in
+                            Text(ciudad.nombre).tag(ciudad as ciudadLocal?)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Servicios Disponibles").font(.gotham(.medium, size: 18))
@@ -65,11 +104,48 @@ struct NuevaBrigadaView: View {
                     guard !nombre.trimmingCharacters(in: .whitespaces).isEmpty else {
                         errorNombre = true; return
                     }
-                    let nueva = Brigada(
+
+                    var nueva = Brigada(
                         nombre: nombre, tipo: tipo,
                         fecha: fecha, ruta: ruta,
                         servicios: serviciosSeleccionados
                     )
+
+                    let serviciosStr = serviciosSeleccionados.joined(separator: ",")
+                    let doctorID = doctorSeleccionado?.dbID ?? 0
+                    let ciudadID = ciudadSeleccionada?.id ?? 0
+                    let municipioID = ciudadSeleccionada?.municipio?.id ?? 0
+                    let nuevaID = nueva.id
+
+                    if appState.isOffline {
+                        _ = brigadasVM.storeBrigada(
+                            context: modelContext,
+                            doctorID: doctorID,
+                            serviciosDisp: serviciosStr,
+                            fechaOp: fecha,
+                            municipioID: municipioID,
+                            ciudadID: ciudadID,
+                            colonia: nombre
+                        )
+                    } else {
+                        Task {
+                            if let id = await brigadasVM.addBrigada(
+                                doctorID: doctorID,
+                                serviciosDisp: serviciosStr,
+                                fechaOp: fecha,
+                                municipioID: municipioID,
+                                ciudadID: ciudadID,
+                                colonia: nombre
+                            ) {
+                                await MainActor.run {
+                                    if let idx = appState.brigadas.firstIndex(where: { $0.id == nuevaID }) {
+                                        appState.brigadas[idx].dbID = id
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     appState.brigadas.append(nueva)
                     dismiss()
                 } label: {
@@ -110,4 +186,5 @@ struct NuevaBrigadaView: View {
 #Preview {
     NavigationStack { NuevaBrigadaView() }
         .environmentObject(AppState())
+        .modelContainer(for: [Doctor.self, ciudadLocal.self, municipioLocal.self], inMemory: true)
 }

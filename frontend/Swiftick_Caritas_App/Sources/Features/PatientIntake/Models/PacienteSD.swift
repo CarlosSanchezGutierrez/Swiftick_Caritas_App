@@ -27,6 +27,7 @@ class Paciente {
     var ciudadID: Int = 0
     var calle: String = ""
     var numCasa: String = ""
+    var dbID: Int = 0
     var isSynced: Bool = false
 
     init(nombre: String, apellidoP: String, apellidoM: String, genero: String, edad: Int, fechaNac: Date, familiares: Int, curp: String) {

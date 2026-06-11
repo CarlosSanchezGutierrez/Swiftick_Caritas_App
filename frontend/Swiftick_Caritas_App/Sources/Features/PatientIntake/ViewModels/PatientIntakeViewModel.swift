@@ -80,19 +80,29 @@ final class PatientIntakeViewModel: ObservableObject {
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
-            // 200/201 = created, 409 = duplicate (already on server — still mark synced)
-            return http.statusCode == 200 || http.statusCode == 201 || http.statusCode == 409
+            if http.statusCode == 200 || http.statusCode == 201 {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let id = json["id"] as? Int {
+                    doctor.dbID = id
+                }
+                return true
+            }
+            return http.statusCode == 409
         } catch {
             return false
         }
     }
 
-    // NOTE: domicilioID is fixed at 1 as a placeholder until the address section
-    // of the registration form is integrated with the API.
     private func pushPaciente(_ paciente: Paciente) async -> Bool {
         guard let url = URL(string: "\(baseURL)/pacientes") else { return false }
+
+        let domicilioID = await createDomicilio(
+            ciudadID: paciente.ciudadID,
+            calle: paciente.calle,
+            numCasa: Int(paciente.numCasa) ?? 0
+        ) ?? 1
 
         let body: [String: Any] = [
             "nombre": paciente.nombre,
@@ -104,7 +114,7 @@ final class PatientIntakeViewModel: ObservableObject {
             "curp": paciente.curp,
             "familiares": paciente.familiares,
             "firmaPriv": paciente.firmaPrivacidad,
-            "domicilioID": 1
+            "domicilioID": domicilioID
         ]
 
         var request = URLRequest(url: url)
@@ -113,11 +123,33 @@ final class PatientIntakeViewModel: ObservableObject {
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
-            return http.statusCode == 201
+            if http.statusCode == 201 {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let id = json["id"] as? Int {
+                    paciente.dbID = id
+                }
+                return true
+            }
+            return false
         } catch {
             return false
         }
+    }
+
+    private func createDomicilio(ciudadID: Int, calle: String, numCasa: Int) async -> Int? {
+        guard ciudadID > 0, let url = URL(string: "\(baseURL)/domicilio") else { return nil }
+        let body: [String: Any] = ["ciudadID": ciudadID, "calle": calle, "numCasa": numCasa]
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        do {
+            let (data, _) = try await URLSession.shared.data(for: req)
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let id = json["id"] as? Int { return id }
+            return nil
+        } catch { return nil }
     }
 }

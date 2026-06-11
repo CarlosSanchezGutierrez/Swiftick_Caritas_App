@@ -232,6 +232,8 @@ def crear_paciente(paciente: nuevoPaciente):
         cursor.execute(query, values)
         conn.commit()
 
+        nuevo_id = cursor.lastrowid
+
     except Exception as e:
         raise HTTPException(
             status_code=400,
@@ -242,7 +244,7 @@ def crear_paciente(paciente: nuevoPaciente):
         cursor.close()
         conn.close()
 
-    return {"mensaje": "Paciente creado correctamente"}
+    return {"mensaje": "Paciente creado correctamente", "id": nuevo_id}
 
 
 # 3. Obtener Paciente por ID

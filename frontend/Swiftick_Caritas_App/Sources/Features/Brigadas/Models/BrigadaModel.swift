@@ -7,6 +7,7 @@ import Foundation
 
 struct Brigada: Identifiable {
     var id: UUID = UUID()
+    var dbID: Int = 0
     var nombre: String = ""
     var tipo: String = ""
     var fecha: Date = Date()

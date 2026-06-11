@@ -4,29 +4,36 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct NuevaConsultaView: View {
     var paciente: Paciente
 
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) var modelContext
+    @EnvironmentObject var appState: AppState
+    @StateObject private var vm = consultaVM()
+
+    @Query(sort: \Doctor.nombre) private var doctores: [Doctor]
 
     let servicios = ["Consulta General", "Entrega de Medicamentos", "Optometría", "Consulta Dental"]
     let tallas    = ["XXS", "XS", "S", "M", "L", "XL", "XXL"]
 
+    @State private var doctorSeleccionado: Doctor? = nil
     @State private var servicioElegido = ""
     @State private var folio: UUID     = UUID()
     @State private var fecha: Date     = .now
     @State private var imss            = false
 
     // Consulta General
-    @State private var peso: Double      = 0
-    @State private var talla             = ""
+    @State private var peso: Double       = 0
+    @State private var talla              = ""
     @State private var perimAbdom: Double = 0
     @State private var presArterS: Double = 0
     @State private var presArterD: Double = 0
-    @State private var pulso: Double     = 0
-    @State private var frecCard: Double  = 0
-    @State private var frecResp: Double  = 0
+    @State private var pulso: Double      = 0
+    @State private var frecCard: Double   = 0
+    @State private var frecResp: Double   = 0
 
     // Entrega de Medicamentos
     @State private var medicina  = ""
@@ -37,6 +44,20 @@ struct NuevaConsultaView: View {
 
     var body: some View {
         Form {
+            // MARK: Doctor
+            Section {
+                Text("Doctor").font(.gotham(.black, size: 28)).listRowBackground(Color.clear)
+
+                Picker("Selecciona un doctor", selection: $doctorSeleccionado) {
+                    Text("Seleccionar...").tag(nil as Doctor?)
+                    ForEach(doctores) { doc in
+                        Text("\(doc.nombre) \(doc.apellidoP)").tag(doc as Doctor?)
+                    }
+                }
+                .pickerStyle(.menu)
+                .font(.gotham(.book, size: 20))
+            }
+
             // MARK: Servicio
             Section {
                 Text("Servicio")
@@ -134,8 +155,7 @@ struct NuevaConsultaView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    // TODO: persist consulta
-                    dismiss()
+                    guardarConsulta()
                 } label: {
                     Label("Guardar", systemImage: "checkmark")
                         .font(.gotham(.bold, size: 16))
@@ -144,6 +164,43 @@ struct NuevaConsultaView: View {
                 .tint(Color(red: 0/255, green: 156/255, blue: 166/255))
             }
         }
+    }
+
+    private func guardarConsulta() {
+        let doctorID   = doctorSeleccionado?.dbID ?? 0
+        let brigadaID  = appState.brigadaActiva?.dbID ?? 0
+        let tipoPaciente = imss ? "IMSS" : "General"
+
+        var signosLocal: SignosFisicosLocal? = nil
+        if servicioElegido == "Consulta General" {
+            signosLocal = vm.storeSignosFisicos(
+                context: modelContext,
+                pacienteID: paciente.dbID,
+                peso: peso, talla: talla,
+                perimAbdom: perimAbdom,
+                presArterD: presArterD,
+                presArterS: presArterS,
+                pulso: pulso,
+                frecCard: frecCard,
+                frecResp: frecResp
+            )
+        }
+
+        let consulta = vm.storeConsulta(
+            context: modelContext,
+            pacienteID: paciente.dbID,
+            doctorID: doctorID,
+            brigadaID: brigadaID,
+            cantMedicina: servicioElegido == "Entrega de Medicamentos" ? cantidad : 0,
+            tipoServicio: servicioElegido.isEmpty ? "General" : servicioElegido,
+            fechaServicio: fecha,
+            imss: imss,
+            tipoPaciente: tipoPaciente,
+            diagnostico: diagnostico
+        )
+        consulta.signosID = signosLocal?.id
+
+        dismiss()
     }
 
     @ViewBuilder
@@ -165,5 +222,6 @@ struct NuevaConsultaView: View {
             genero: "Femenino", edad: 20, fechaNac: .now, familiares: 2, curp: "")
         )
     }
-    .modelContainer(for: [Paciente.self, Doctor.self], inMemory: true)
+    .environmentObject(AppState())
+    .modelContainer(for: [Paciente.self, Doctor.self, ConsultaLocal.self, SignosFisicosLocal.self], inMemory: true)
 }
