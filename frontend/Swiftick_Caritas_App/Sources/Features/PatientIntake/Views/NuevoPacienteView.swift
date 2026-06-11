@@ -65,6 +65,9 @@ struct NuevoPacienteView: View {
     @State private var errorGeneroDoc = false
     @State private var mensajeError = ""
 
+    @State private var pacienteCreado: Paciente? = nil
+    @State private var irANuevaConsulta = false
+
     let opcionesGenero = ["Masculino", "Femenino", "No binario", "Prefiero no decir"]
 
     var isCreating: Bool { paciente == nil }
@@ -177,9 +180,14 @@ struct NuevoPacienteView: View {
 
                 Button {
                     if validarFormulario() {
-                        guardarPaciente()
+                        let p = guardarPaciente()
                         guardarDoctor()
-                        dismiss()
+                        if isCreating {
+                            pacienteCreado = p
+                            irANuevaConsulta = true
+                        } else {
+                            dismiss()
+                        }
                     }
                 } label: {
                     HStack {
@@ -203,6 +211,11 @@ struct NuevoPacienteView: View {
         .background(Color(red: 242/255, green: 242/255, blue: 247/255))
         .navigationTitle(isCreating ? "Nuevo Paciente" : "Editar Paciente")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $irANuevaConsulta) {
+            if let p = pacienteCreado {
+                NuevaConsultaView(paciente: p)
+            }
+        }
     }
 
     // MARK: - Paciente Section
@@ -441,7 +454,8 @@ struct NuevoPacienteView: View {
         return !hayErrores
     }
 
-    private func guardarPaciente() {
+    @discardableResult
+    private func guardarPaciente() -> Paciente {
         let edadCalculada = Calendar.current.dateComponents([.year], from: fechaNacimiento, to: Date()).year ?? 0
         let intFam = Int(familiares) ?? 0
 
@@ -463,6 +477,8 @@ struct NuevoPacienteView: View {
             existente.calle = calle
             existente.numCasa = numCasa
             existente.isSynced = false
+            try? modelContext.save()
+            return existente
         } else {
             let nuevo = Paciente(
                 nombre: nombre, apellidoP: apellidoP, apellidoM: apellidoM,
@@ -478,8 +494,9 @@ struct NuevoPacienteView: View {
             nuevo.calle = calle
             nuevo.numCasa = numCasa
             modelContext.insert(nuevo)
+            try? modelContext.save()
+            return nuevo
         }
-        try? modelContext.save()
     }
 
     private func guardarDoctor() {
