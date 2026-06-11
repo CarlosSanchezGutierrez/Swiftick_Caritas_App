@@ -8,6 +8,7 @@ import SwiftData
 
 struct NuevoPacienteView: View {
     var paciente: Paciente? = nil
+    var navegacionActiva: Binding<Bool> = .constant(true)
 
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
@@ -66,6 +67,7 @@ struct NuevoPacienteView: View {
     @State private var mensajeError = ""
 
     @State private var pacienteCreado: Paciente? = nil
+    @State private var doctorCreado: Doctor? = nil
     @State private var irANuevaConsulta = false
 
     let opcionesGenero = ["Masculino", "Femenino", "No binario", "Prefiero no decir"]
@@ -181,9 +183,10 @@ struct NuevoPacienteView: View {
                 Button {
                     if validarFormulario() {
                         let p = guardarPaciente()
-                        guardarDoctor()
+                        let doc = guardarDoctor()
                         if isCreating {
                             pacienteCreado = p
+                            doctorCreado = doc
                             irANuevaConsulta = true
                         } else {
                             dismiss()
@@ -213,7 +216,11 @@ struct NuevoPacienteView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $irANuevaConsulta) {
             if let p = pacienteCreado {
-                NuevaConsultaView(paciente: p)
+                NuevaConsultaView(
+                    paciente: p,
+                    doctorPrevio: doctorCreado,
+                    onSaved: { navegacionActiva.wrappedValue = false }
+                )
             }
         }
     }
@@ -499,14 +506,16 @@ struct NuevoPacienteView: View {
         }
     }
 
-    private func guardarDoctor() {
-        guard !nombreDoc.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+    @discardableResult
+    private func guardarDoctor() -> Doctor? {
+        guard !nombreDoc.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         let doctor = Doctor(
             nombre: nombreDoc, apellidoP: apellidoPDOC, apellidoM: apellidoMDOC,
             genero: generoDoc, fechaNac: fechaNacDoc, realizandoPrac: realizandoPrac
         )
         modelContext.insert(doctor)
         try? modelContext.save()
+        return doctor
     }
 }
 

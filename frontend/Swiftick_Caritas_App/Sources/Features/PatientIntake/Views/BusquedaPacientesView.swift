@@ -73,7 +73,7 @@ struct BusquedaPacientesView: View {
             }
         }
         .navigationDestination(isPresented: $irAgregarPaciente) {
-            NuevoPacienteView()
+            NuevoPacienteView(navegacionActiva: $irAgregarPaciente)
         }
         .navigationTitle("Pacientes")
         .padding()

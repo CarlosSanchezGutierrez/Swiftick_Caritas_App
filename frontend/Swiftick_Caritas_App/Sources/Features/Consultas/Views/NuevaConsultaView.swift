@@ -8,6 +8,8 @@ import SwiftData
 
 struct NuevaConsultaView: View {
     var paciente: Paciente
+    var doctorPrevio: Doctor? = nil
+    var onSaved: (() -> Void)? = nil
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) var modelContext
@@ -48,14 +50,22 @@ struct NuevaConsultaView: View {
             Section {
                 Text("Doctor").font(.gotham(.black, size: 28)).listRowBackground(Color.clear)
 
-                Picker("Selecciona un doctor", selection: $doctorSeleccionado) {
-                    Text("Seleccionar...").tag(nil as Doctor?)
-                    ForEach(doctores) { doc in
-                        Text("\(doc.nombre) \(doc.apellidoP)").tag(doc as Doctor?)
+                if let doc = doctorPrevio {
+                    LabeledContent("Doctor responsable") {
+                        Text("\(doc.nombre) \(doc.apellidoP)")
+                            .font(.gotham(.book, size: 20))
+                            .foregroundStyle(.secondary)
                     }
+                } else {
+                    Picker("Selecciona un doctor", selection: $doctorSeleccionado) {
+                        Text("Seleccionar...").tag(nil as Doctor?)
+                        ForEach(doctores) { doc in
+                            Text("\(doc.nombre) \(doc.apellidoP)").tag(doc as Doctor?)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .font(.gotham(.book, size: 20))
                 }
-                .pickerStyle(.menu)
-                .font(.gotham(.book, size: 20))
             }
 
             // MARK: Servicio
@@ -152,22 +162,33 @@ struct NuevaConsultaView: View {
         }
         .navigationTitle("Nueva Consulta")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    guardarConsulta()
-                } label: {
-                    Label("Guardar", systemImage: "checkmark")
-                        .font(.gotham(.bold, size: 16))
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                guardarConsulta()
+            } label: {
+                HStack {
+                    Image(systemName: "checkmark")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                    Text("Guardar y continuar")
+                        .font(.headline)
+                        .foregroundStyle(.white)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color(red: 0/255, green: 156/255, blue: 166/255))
             }
+            .padding(3)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(red: 0/255, green: 156/255, blue: 166/255))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+            .background(Color(UIColor.systemBackground))
         }
     }
 
     private func guardarConsulta() {
-        let doctorID   = doctorSeleccionado?.dbID ?? 0
+        let doctorID   = doctorPrevio?.dbID ?? doctorSeleccionado?.dbID ?? 0
         let brigadaID  = appState.brigadaActiva?.dbID ?? 0
         let tipoPaciente = imss ? "IMSS" : "General"
 
@@ -200,7 +221,7 @@ struct NuevaConsultaView: View {
         )
         consulta.signosID = signosLocal?.id
 
-        dismiss()
+        if let onSaved { onSaved() } else { dismiss() }
     }
 
     @ViewBuilder
