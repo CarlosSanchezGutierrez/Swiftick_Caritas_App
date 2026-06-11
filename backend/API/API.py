@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 import mysql.connector
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import date  # Mejor opción para manejar DATE de MySQL
 from mysql.connector import Error
 
@@ -82,6 +82,57 @@ class signosFisicos(BaseModel):
     pulso: double
     frecCard: double
     frecResp: double
+
+class Brigada(BaseModel):
+    id: int
+    doctorID: int
+    serviciosDisp: str
+    fechaOp: date
+    municipioID: int
+    ciudadID: int
+    colonia: str
+
+class NuevaBrigada(BaseModel):
+    doctorID: int
+    serviciosDisp: str
+    fechaOp: date
+    municipioID: int
+    ciudadID: int
+    colonia: Optional[str] = None
+
+class Medicamento(BaseModel):
+    id: int
+    nombre: str
+    descripcion: Optional[str] = None
+
+class NuevoMedicamento(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = None
+
+class Servicio(BaseModel):
+    id: int
+    pacienteID: int
+    doctorID: int
+    brigadaID: int
+    signosID: int
+    medicamentosID: int
+    cantMedicina: int
+    tipoServicio: str
+    fechaServicio: date
+    imss: bool
+    tipoPaciente: str
+
+class NuevoServicio(BaseModel):
+    pacienteID: int
+    doctorID: int
+    brigadaID: int
+    signosID: int
+    medicamentosID: int
+    cantMedicina: int
+    tipoServicio: str
+    fechaServicio: date
+    imss: bool
+    tipoPaciente: str
 
 class Doctor(BaseModel):
     id: int
@@ -1115,3 +1166,238 @@ def update_doctor(
     conn.close()
 
     return doctor_actualizado
+
+
+## BRIGADAS ENDPOINTS
+## ---------------------------------------------------------------
+
+# 1. Obtener todas las brigadas
+@app.get("/brigadas", response_model=List[Brigada])
+def obtener_brigadas():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, doctorID, serviciosDisp, fechaOp,
+               municipioID, ciudadID, colonia
+        FROM Brigada
+    """)
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+# 2. Obtener brigada por ID
+@app.get("/brigadas/{brigada_id}", response_model=Brigada)
+def obtener_brigada(brigada_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, doctorID, serviciosDisp, fechaOp,
+               municipioID, ciudadID, colonia
+        FROM Brigada
+        WHERE id = %s
+    """, (brigada_id,))
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Brigada no encontrada")
+
+    return result
+
+# 3. Crear nueva brigada
+@app.post("/brigadas", status_code=status.HTTP_201_CREATED)
+def crear_brigada(brigada: NuevaBrigada):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query = """
+            INSERT INTO Brigada (doctorID, serviciosDisp, fechaOp,
+                                 municipioID, ciudadID, colonia)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        values = (
+            brigada.doctorID,
+            brigada.serviciosDisp,
+            brigada.fechaOp,
+            brigada.municipioID,
+            brigada.ciudadID,
+            brigada.colonia
+        )
+
+        cursor.execute(query, values)
+        conn.commit()
+
+        nuevo_id = cursor.lastrowid
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al crear brigada: {str(e)}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return {"mensaje": "Brigada creada correctamente", "id": nuevo_id}
+
+
+## MEDICAMENTOS ENDPOINTS
+## ---------------------------------------------------------------
+
+# 1. Obtener todos los medicamentos
+@app.get("/medicamentos", response_model=List[Medicamento])
+def obtener_medicamentos():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT id, nombre, descripcion FROM Medicamento")
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+# 2. Obtener medicamento por ID
+@app.get("/medicamentos/{medicamento_id}", response_model=Medicamento)
+def obtener_medicamento(medicamento_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT id, nombre, descripcion FROM Medicamento WHERE id = %s",
+        (medicamento_id,)
+    )
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Medicamento no encontrado")
+
+    return result
+
+# 3. Crear nuevo medicamento
+@app.post("/medicamentos", status_code=status.HTTP_201_CREATED)
+def crear_medicamento(medicamento: NuevoMedicamento):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            "INSERT INTO Medicamento (nombre, descripcion) VALUES (%s, %s)",
+            (medicamento.nombre, medicamento.descripcion)
+        )
+        conn.commit()
+
+        nuevo_id = cursor.lastrowid
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al crear medicamento: {str(e)}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return {"mensaje": "Medicamento creado correctamente", "id": nuevo_id}
+
+
+## SERVICIOS ENDPOINTS
+## ---------------------------------------------------------------
+
+# 1. Obtener todos los servicios
+@app.get("/servicios", response_model=List[Servicio])
+def obtener_servicios():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, pacienteID, doctorID, brigadaID, signosID,
+               medicamentosID, cantMedicina, tipoServicio,
+               fechaServicio, imss, tipoPaciente
+        FROM Servicio
+    """)
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+# 2. Obtener servicio por ID
+@app.get("/servicios/{servicio_id}", response_model=Servicio)
+def obtener_servicio(servicio_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, pacienteID, doctorID, brigadaID, signosID,
+               medicamentosID, cantMedicina, tipoServicio,
+               fechaServicio, imss, tipoPaciente
+        FROM Servicio
+        WHERE id = %s
+    """, (servicio_id,))
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+
+    return result
+
+# 3. Crear nuevo servicio
+@app.post("/servicios", status_code=status.HTTP_201_CREATED)
+def crear_servicio(servicio: NuevoServicio):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query = """
+            INSERT INTO Servicio (
+                pacienteID, doctorID, brigadaID, signosID,
+                medicamentosID, cantMedicina, tipoServicio,
+                fechaServicio, imss, tipoPaciente
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        values = (
+            servicio.pacienteID,
+            servicio.doctorID,
+            servicio.brigadaID,
+            servicio.signosID,
+            servicio.medicamentosID,
+            servicio.cantMedicina,
+            servicio.tipoServicio,
+            servicio.fechaServicio,
+            servicio.imss,
+            servicio.tipoPaciente
+        )
+
+        cursor.execute(query, values)
+        conn.commit()
+
+        nuevo_id = cursor.lastrowid
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al crear servicio: {str(e)}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return {"mensaje": "Servicio creado correctamente", "id": nuevo_id}
