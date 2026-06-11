@@ -5,6 +5,8 @@ from typing import List, Optional
 from datetime import date  # Mejor opción para manejar DATE de MySQL
 from mysql.connector import Error
 
+double = float  # Python alias so signosFisicos model loads correctly
+
 app = FastAPI(title="API de Pacientes")
 
 # Configuración de la conexión
