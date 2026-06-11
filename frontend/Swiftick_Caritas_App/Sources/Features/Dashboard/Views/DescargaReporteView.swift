@@ -21,7 +21,7 @@ struct ReporteConsultaAPI: Codable {
     let cantMedicina: Int
     let tipoServicio: String
     let fechaServicio: String
-    let imss: Bool
+    let imss: Int
     let tipoPaciente: String
 }
 
