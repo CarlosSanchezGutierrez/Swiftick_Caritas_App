@@ -221,6 +221,7 @@ struct NuevaConsultaView: View {
             diagnostico: diagnostico
         )
         consulta.signosID = signosLocal?.id
+        try? modelContext.save()
 
         if let onSaved { onSaved() } else { dismiss() }
     }
