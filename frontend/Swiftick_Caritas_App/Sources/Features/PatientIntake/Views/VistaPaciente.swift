@@ -101,7 +101,7 @@ struct VistaPaciente: View {
                             .foregroundStyle(.secondary)
                             .padding()
                     } else {
-                        LazyVStack(spacing: 12) {
+                        VStack(spacing: 12) {
                             ForEach(consultas.sorted { $0.fechaServicio > $1.fechaServicio }) { consulta in
                                 ConsultaCardView(consulta: consulta, doctores: doctores)
                             }
