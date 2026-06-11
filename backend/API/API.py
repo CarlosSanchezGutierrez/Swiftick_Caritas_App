@@ -957,8 +957,9 @@ class ReporteConsulta(BaseModel):
     imss: bool = False
     tipoPaciente: str = ""
 
+ReporteConsulta.model_rebuild()
 
-@app.get("/reportes/consultas", response_model=List[ReporteConsulta])
+@app.get("/reportes/consultas")
 def reporte_consultas(
     tipo: str,
     nombre: str = "",
