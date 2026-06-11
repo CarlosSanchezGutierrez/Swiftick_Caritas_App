@@ -178,21 +178,38 @@ def obtener_pacientes():
 
 @app.post("/pacientes", status_code=status.HTTP_201_CREATED)
 def crear_paciente(paciente: nuevoPaciente):
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
+
         query = """
             INSERT INTO Pacientes (
-                nombre, apellidoP, apellidoM, genero, edad, fechaNac,
-                curp, familiares, firmaPriv, domicilioID
+                nombre,
+                apellidoP,
+                apellidoM,
+                genero,
+                edad,
+                fechaNac,
+                curp,
+                familiares,
+                firmaPriv,
+                domicilioID
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
+
         values = (
-            paciente.nombre, paciente.apellidoP, paciente.apellidoM,
-            paciente.genero, paciente.edad, paciente.fechaNac,
-            paciente.curp, paciente.familiares, paciente.firmaPriv,
+            paciente.nombre,
+            paciente.apellidoP,
+            paciente.apellidoM,
+            paciente.genero,
+            paciente.edad,
+            paciente.fechaNac,
+            paciente.curp,
+            paciente.familiares,
+            paciente.firmaPriv,
             paciente.domicilioID
         )
 
@@ -201,14 +218,46 @@ def crear_paciente(paciente: nuevoPaciente):
 
         nuevo_id = cursor.lastrowid
 
+        return {
+            "mensaje": "Paciente creado correctamente",
+            "id": nuevo_id
+        }
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al crear paciente: {str(e)}")
+
+        if getattr(e, "errno", None) == 1062:
+
+            cursor.execute("""
+                SELECT id
+                FROM Pacientes
+                WHERE nombre = %s
+                AND apellidoP = %s
+                AND apellidoM = %s
+                AND fechaNac = %s
+                AND curp = %s
+            """, (
+                paciente.nombre,
+                paciente.apellidoP,
+                paciente.apellidoM,
+                paciente.fechaNac,
+                paciente.curp
+            ))
+
+            paciente_existente = cursor.fetchone()
+
+            return {
+                "mensaje": "Paciente ya existe",
+                "id": paciente_existente[0]
+            }
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
 
     finally:
         cursor.close()
         conn.close()
-
-    return {"mensaje": "Paciente creado correctamente", "id": nuevo_id}
 
 
 @app.get("/pacientes/{paciente_id}", response_model=Paciente)
