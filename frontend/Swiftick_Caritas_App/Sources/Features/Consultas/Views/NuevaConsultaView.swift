@@ -44,6 +44,19 @@ struct NuevaConsultaView: View {
     // Shared
     @State private var diagnostico = ""
 
+    private var formularioValido: Bool {
+        let doctorOk = doctorPrevio != nil || doctorSeleccionado != nil
+        guard doctorOk, !servicioElegido.isEmpty else { return false }
+        switch servicioElegido {
+        case "Consulta General":
+            return !talla.isEmpty
+        case "Entrega de Medicamentos":
+            return !medicina.trimmingCharacters(in: .whitespaces).isEmpty && cantidad > 0
+        default:
+            return true
+        }
+    }
+
     var body: some View {
         Form {
             // MARK: Doctor
@@ -179,8 +192,11 @@ struct NuevaConsultaView: View {
             .padding(3)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color(red: 0/255, green: 156/255, blue: 166/255))
+            .background(formularioValido
+                ? Color(red: 0/255, green: 156/255, blue: 166/255)
+                : Color.gray)
             .clipShape(RoundedRectangle(cornerRadius: 14))
+            .disabled(!formularioValido)
             .padding(.horizontal)
             .padding(.bottom, 8)
             .background(Color(UIColor.systemBackground))
