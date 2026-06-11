@@ -66,6 +66,7 @@ struct NuevosSignosFisicosAPI: Codable {
 class ConsultaLocal {
     var id: Int?
     var pacienteID: Int
+    var localPacienteID: String  // Paciente.pacienteID UUID — stable local link, unaffected by sync
     var doctorID: Int
     var brigadaID: Int
     var signosID: Int?
@@ -78,11 +79,12 @@ class ConsultaLocal {
     var diagnostico: String
     var isSynced: Bool = false
 
-    init(pacienteID: Int, doctorID: Int, brigadaID: Int,
+    init(pacienteID: Int, localPacienteID: String, doctorID: Int, brigadaID: Int,
          cantMedicina: Int, tipoServicio: String,
          fechaServicio: Date, imss: Bool, tipoPaciente: String,
          diagnostico: String) {
         self.pacienteID = pacienteID
+        self.localPacienteID = localPacienteID
         self.doctorID = doctorID
         self.brigadaID = brigadaID
         self.cantMedicina = cantMedicina

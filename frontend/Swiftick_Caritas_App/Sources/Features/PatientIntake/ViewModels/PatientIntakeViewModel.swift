@@ -125,7 +125,7 @@ final class PatientIntakeViewModel: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
-            if http.statusCode == 201 {
+            if http.statusCode == 201 || http.statusCode == 409 {
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let id = json["id"] as? Int {
                     paciente.dbID = id

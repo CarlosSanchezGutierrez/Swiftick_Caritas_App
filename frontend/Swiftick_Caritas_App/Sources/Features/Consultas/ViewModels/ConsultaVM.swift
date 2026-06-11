@@ -43,12 +43,13 @@ class consultaVM: ObservableObject {
         } catch { return nil }
     }
 
-    func storeConsulta(context: ModelContext, pacienteID: Int, doctorID: Int,
-                       brigadaID: Int, cantMedicina: Int, tipoServicio: String,
-                       fechaServicio: Date, imss: Bool, tipoPaciente: String,
-                       diagnostico: String) -> ConsultaLocal {
+    func storeConsulta(context: ModelContext, pacienteID: Int, localPacienteID: String,
+                       doctorID: Int, brigadaID: Int, cantMedicina: Int,
+                       tipoServicio: String, fechaServicio: Date, imss: Bool,
+                       tipoPaciente: String, diagnostico: String) -> ConsultaLocal {
         let consulta = ConsultaLocal(
-            pacienteID: pacienteID, doctorID: doctorID, brigadaID: brigadaID,
+            pacienteID: pacienteID, localPacienteID: localPacienteID,
+            doctorID: doctorID, brigadaID: brigadaID,
             cantMedicina: cantMedicina, tipoServicio: tipoServicio,
             fechaServicio: fechaServicio, imss: imss,
             tipoPaciente: tipoPaciente, diagnostico: diagnostico

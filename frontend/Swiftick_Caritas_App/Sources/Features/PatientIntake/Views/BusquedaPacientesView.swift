@@ -91,29 +91,6 @@ struct BusquedaPacientesView: View {
                 )
             }
         }
-        .task {
-            await generarPacientes()
-        }
-    }
-
-    func generarPacientes() async {
-        if pacientes.isEmpty {
-            let seedData: [(String, String, String, String, Int, Int, String)] = [
-                ("Joaquin",          "Perez",    "Rosales",   "Masculino", 31, 4, "TEC00011123"),
-                ("Maria",            "García",   "Ramirez",   "Femenino",  38, 6, ""),
-                ("Gabriel",          "Espino",   "Sifuentes", "Masculino", 20, 3, "TEC12345678"),
-                ("Leonel Francisco", "Bailón",   "Sifuentes", "Masculino", 20, 5, "TEC87654321"),
-                ("Carlos",           "Sánchez",  "Gutiérrez", "Masculino", 21, 4, "TEC244466666"),
-            ]
-            for (nombre, ap, am, genero, edad, fam, curp) in seedData {
-                modelContext.insert(
-                    Paciente(nombre: nombre, apellidoP: ap, apellidoM: am,
-                             genero: genero, edad: edad, fechaNac: Date(),
-                             familiares: fam, curp: curp)
-                )
-            }
-            try? modelContext.save()
-        }
     }
 }
 

@@ -14,8 +14,7 @@ struct VistaPaciente: View {
     @Query private var doctores: [Doctor]
 
     private var consultas: [ConsultaLocal] {
-        guard paciente.dbID > 0 else { return [] }
-        return todasConsultas.filter { $0.pacienteID == paciente.dbID }
+        todasConsultas.filter { $0.localPacienteID == paciente.pacienteID.uuidString }
     }
 
     private var serviciosUnicos: Int {
@@ -97,11 +96,7 @@ struct VistaPaciente: View {
                         .font(.title)
                         .fontWeight(.bold)
 
-                    if paciente.dbID == 0 {
-                        Text("Paciente pendiente de sincronizar. Conecta a la red para ver el historial.")
-                            .foregroundStyle(.secondary)
-                            .padding()
-                    } else if consultas.isEmpty {
+                    if consultas.isEmpty {
                         Text("Sin consultas registradas")
                             .foregroundStyle(.secondary)
                             .padding()

@@ -10,8 +10,10 @@ struct NuevoPacienteView: View {
     var paciente: Paciente? = nil
     var navegacionActiva: Binding<Bool> = .constant(true)
 
+    @EnvironmentObject var appState: AppState
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    @StateObject private var patientVM = PatientIntakeViewModel()
 
     @State private var mostrarFormulario = false
     @State private var firmaPriv = false
@@ -184,6 +186,9 @@ struct NuevoPacienteView: View {
                     if validarFormulario() {
                         let p = guardarPaciente()
                         let doc = guardarDoctor()
+                        Task {
+                            await patientVM.syncAll(context: modelContext, appState: appState)
+                        }
                         if isCreating {
                             pacienteCreado = p
                             doctorCreado = doc

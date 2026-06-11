@@ -210,6 +210,7 @@ struct NuevaConsultaView: View {
         let consulta = vm.storeConsulta(
             context: modelContext,
             pacienteID: paciente.dbID,
+            localPacienteID: paciente.pacienteID.uuidString,
             doctorID: doctorID,
             brigadaID: brigadaID,
             cantMedicina: servicioElegido == "Entrega de Medicamentos" ? cantidad : 0,
