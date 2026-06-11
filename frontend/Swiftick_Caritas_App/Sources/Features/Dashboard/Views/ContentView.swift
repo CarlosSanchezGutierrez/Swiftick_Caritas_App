@@ -12,6 +12,30 @@ struct ContentView: View {
     @Environment(\.modelContext) var modelContext
     @StateObject private var patientVM = PatientIntakeViewModel()
 
+    // MARK: - Reporte state
+    private let baseURL = "http://10.14.255.99:8000"
+    @State private var reporteTipo    = ""
+    @State private var reporteFiltro  = ""
+    @State private var reporteBusquedaPrincipal = ""
+    @State private var reporteBusquedaFiltro    = ""
+    @State private var reporteIsLoading  = false
+    @State private var reporteArchivoCSV: URL? = nil
+    @State private var reporteMostrarShare = false
+    @State private var reporteError: String? = nil
+
+    private let opcionesPrincipal = ["Pacientes", "Doctores"]
+    private var opcionesFiltro: [String] {
+        reporteTipo == "Pacientes"
+            ? ["Brigada", "Ciudad", "Servicio", "Doctor"]
+            : ["Brigada", "Ciudad", "Servicio", "Pacientes"]
+    }
+    private var reporteListoParaDescargar: Bool {
+        !reporteTipo.isEmpty &&
+        !reporteFiltro.isEmpty &&
+        !reporteBusquedaPrincipal.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !reporteIsLoading
+    }
+
     private var currentBrigade: BrigadeInfo {
         appState.brigadaActiva?.brigadeInfo ?? MockData.currentBrigade
     }
@@ -155,11 +179,167 @@ struct ContentView: View {
                         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
                     }
                     .padding(.horizontal)
+
+                    // MARK: - Descargar Reporte
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                                .foregroundColor(AppTheme.teal)
+                            Text("Descargar Reporte")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(AppTheme.textDark)
+                        }
+
+                        HStack(spacing: 12) {
+                            reportePickerCard(label: "Vista", selection: $reporteTipo, options: opcionesPrincipal)
+                                .onChange(of: reporteTipo) {
+                                    reporteFiltro = ""; reporteBusquedaPrincipal = ""; reporteBusquedaFiltro = ""; reporteError = nil
+                                }
+                            if !reporteTipo.isEmpty {
+                                reportePickerCard(label: "Filtrar por", selection: $reporteFiltro, options: opcionesFiltro)
+                                    .onChange(of: reporteFiltro) { reporteBusquedaFiltro = ""; reporteError = nil }
+                            }
+                        }
+
+                        if !reporteTipo.isEmpty && !reporteFiltro.isEmpty {
+                            reporteSearchField(
+                                icon: "person.fill",
+                                placeholder: reporteTipo == "Pacientes" ? "Nombre del paciente..." : "Nombre del doctor...",
+                                text: $reporteBusquedaPrincipal
+                            )
+                            reporteSearchField(
+                                icon: "line.3.horizontal.decrease",
+                                placeholder: "Buscar \(reporteFiltro.lowercased())...",
+                                text: $reporteBusquedaFiltro
+                            )
+                        }
+
+                        if let msg = reporteError {
+                            Text(msg).font(.caption).foregroundColor(.red)
+                        }
+
+                        if reporteListoParaDescargar {
+                            Button {
+                                Task { await descargarReporte() }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    if reporteIsLoading {
+                                        ProgressView().tint(.white)
+                                    } else {
+                                        Image(systemName: "arrow.down.circle.fill").font(.title3)
+                                    }
+                                    Text(reporteIsLoading ? "Generando..." : "Descargar CSV").fontWeight(.semibold)
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.blue)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            .disabled(reporteIsLoading)
+                            .sheet(isPresented: $reporteMostrarShare) {
+                                if let url = reporteArchivoCSV { ShareSheet(items: [url]) }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
+                    .padding(.horizontal)
                     .padding(.bottom, 20)
                 }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+    }
+
+    // MARK: - Reporte network
+
+    private func descargarReporte() async {
+        reporteIsLoading = true
+        reporteError     = nil
+        defer { reporteIsLoading = false }
+
+        var components = URLComponents(string: "\(baseURL)/reportes/consultas")!
+        components.queryItems = [
+            URLQueryItem(name: "tipo",   value: reporteTipo.lowercased()),
+            URLQueryItem(name: "nombre", value: reporteBusquedaPrincipal),
+            URLQueryItem(name: "filtro", value: reporteFiltro.lowercased()),
+            URLQueryItem(name: "valor",  value: reporteBusquedaFiltro)
+        ]
+        guard let url = components.url else { return }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let records = try JSONDecoder().decode([ReporteConsultaAPI].self, from: data)
+            if let fileURL = generarCSV(from: records) {
+                reporteArchivoCSV = fileURL
+                reporteMostrarShare = true
+            }
+        } catch {
+            reporteError = "Error al obtener datos del servidor."
+        }
+    }
+
+    private func generarCSV(from records: [ReporteConsultaAPI]) -> URL? {
+        var csv = "id,pacienteID,pacienteNombre,doctorID,doctorNombre,brigadaID,brigadaColonia,ciudadNombre,signosID,cantMedicina,tipoServicio,fechaServicio,imss,tipoPaciente\n"
+        for r in records {
+            let row: [String] = [
+                "\(r.id)", "\(r.pacienteID)",
+                "\"\(r.pacienteNombre ?? "")\"",
+                "\(r.doctorID)",
+                "\"\(r.doctorNombre ?? "")\"",
+                "\(r.brigadaID)",
+                "\"\(r.brigadaColonia ?? "")\"",
+                "\"\(r.ciudadNombre ?? "")\"",
+                "\(r.signosID ?? 0)", "\(r.cantMedicina)",
+                "\"\(r.tipoServicio)\"",
+                r.fechaServicio,
+                "\(r.imss)",
+                "\"\(r.tipoPaciente)\""
+            ]
+            csv += row.joined(separator: ",") + "\n"
+        }
+        let fileName = "reporte_\(reporteTipo.lowercased())_\(Int(Date().timeIntervalSince1970)).csv"
+        let fileURL  = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try csv.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            reporteError = "Error al generar el archivo CSV."
+            return nil
+        }
+    }
+
+    // MARK: - Reporte subviews
+
+    @ViewBuilder
+    private func reportePickerCard(label: String, selection: Binding<String>, options: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.caption).foregroundColor(.secondary)
+            Picker(label, selection: selection) {
+                Text("Seleccionar").tag("")
+                ForEach(options, id: \.self) { Text($0).tag($0) }
+            }
+            .pickerStyle(.menu)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color(UIColor.secondarySystemFill))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func reporteSearchField(icon: String, placeholder: String, text: Binding<String>) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).foregroundColor(.gray).frame(width: 18)
+            TextField(placeholder, text: text)
+        }
+        .padding(10)
+        .background(Color(UIColor.secondarySystemFill))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 

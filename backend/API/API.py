@@ -936,3 +936,84 @@ def crear_servicio(servicio: NuevoServicio):
     finally:
         cursor.close()
         conn.close()
+
+
+## REPORTES
+## ---------------------------------------------------------------
+
+class ReporteConsulta(BaseModel):
+    id: int
+    pacienteID: int
+    pacienteNombre: Optional[str]
+    doctorID: int
+    doctorNombre: Optional[str]
+    brigadaID: int
+    brigadaColonia: Optional[str]
+    ciudadNombre: Optional[str]
+    signosID: Optional[int]
+    cantMedicina: int
+    tipoServicio: str
+    fechaServicio: str
+    imss: bool
+    tipoPaciente: str
+
+
+@app.get("/reportes/consultas", response_model=List[ReporteConsulta])
+def reporte_consultas(
+    tipo: str,
+    nombre: str = "",
+    filtro: str = "",
+    valor: str = ""
+):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT
+            s.id, s.pacienteID, s.doctorID, s.brigadaID,
+            s.signosID, s.cantMedicina, s.tipoServicio,
+            DATE_FORMAT(s.fechaServicio, '%Y-%m-%d') AS fechaServicio,
+            s.imss, s.tipoPaciente,
+            CONCAT(p.nombre, ' ', p.apellidoP, ' ', p.apellidoM) AS pacienteNombre,
+            CONCAT(d.nombre, ' ', d.apellidoP)                    AS doctorNombre,
+            b.colonia                                              AS brigadaColonia,
+            c.nombre                                               AS ciudadNombre
+        FROM Servicio s
+        LEFT JOIN Pacientes p ON s.pacienteID = p.id
+        LEFT JOIN Doctor    d ON s.doctorID   = d.id
+        LEFT JOIN Brigada   b ON s.brigadaID  = b.id
+        LEFT JOIN Ciudad    c ON b.ciudadID   = c.id
+        WHERE 1=1
+    """
+    params = []
+
+    if nombre:
+        if tipo == "pacientes":
+            query += " AND (p.nombre LIKE %s OR p.apellidoP LIKE %s OR p.apellidoM LIKE %s)"
+            params += [f"%{nombre}%"] * 3
+        elif tipo == "doctores":
+            query += " AND (d.nombre LIKE %s OR d.apellidoP LIKE %s)"
+            params += [f"%{nombre}%"] * 2
+
+    if filtro and valor:
+        if filtro == "servicio":
+            query += " AND s.tipoServicio LIKE %s"
+            params.append(f"%{valor}%")
+        elif filtro == "doctor":
+            query += " AND (d.nombre LIKE %s OR d.apellidoP LIKE %s)"
+            params += [f"%{valor}%"] * 2
+        elif filtro == "pacientes":
+            query += " AND (p.nombre LIKE %s OR p.apellidoP LIKE %s)"
+            params += [f"%{valor}%"] * 2
+        elif filtro == "brigada":
+            query += " AND b.colonia LIKE %s"
+            params.append(f"%{valor}%")
+        elif filtro == "ciudad":
+            query += " AND c.nombre LIKE %s"
+            params.append(f"%{valor}%")
+
+    cursor.execute(query, params)
+    results = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return results
