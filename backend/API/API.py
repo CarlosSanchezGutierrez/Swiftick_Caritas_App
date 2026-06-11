@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException, status
-from fastapi.responses import JSONResponse
 import mysql.connector
 from pydantic import BaseModel
 from typing import List, Optional
@@ -942,9 +941,28 @@ def crear_servicio(servicio: NuevoServicio):
 ## REPORTES
 ## ---------------------------------------------------------------
 
+class ReporteConsulta(BaseModel):
+    id: int
+    pacienteID: int
+    pacienteNombre: Optional[str] = None
+    doctorID: int
+    doctorNombre: Optional[str] = None
+    brigadaID: int
+    brigadaColonia: Optional[str] = None
+    ciudadNombre: Optional[str] = None
+    signosID: Optional[int] = None
+    cantMedicina: int = 0
+    tipoServicio: str = ""
+    fechaServicio: str = ""
+    imss: bool = False
+    tipoPaciente: str = ""
+
+ReporteConsulta.model_rebuild()
+
 @app.get("/reportes/consultas")
 def reporte_consultas(
     tipo: str,
+    nombre: str = "",
     filtro: str = "",
     valor: str = ""
 ):
@@ -958,7 +976,7 @@ def reporte_consultas(
             COALESCE(s.cantMedicina, 0)                            AS cantMedicina,
             COALESCE(s.tipoServicio, '')                           AS tipoServicio,
             DATE_FORMAT(s.fechaServicio, '%Y-%m-%d')               AS fechaServicio,
-            CAST(s.imss AS UNSIGNED)                               AS imss,
+            s.imss,
             COALESCE(s.tipoPaciente, '')                           AS tipoPaciente,
             CONCAT(p.nombre, ' ', p.apellidoP, ' ', p.apellidoM)  AS pacienteNombre,
             CONCAT(d.nombre, ' ', d.apellidoP)                     AS doctorNombre,
@@ -992,8 +1010,8 @@ def reporte_consultas(
 
     try:
         cursor.execute(query, params)
-        rows = cursor.fetchall()
-        return JSONResponse(content=rows)
+        results = cursor.fetchall()
+        return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
