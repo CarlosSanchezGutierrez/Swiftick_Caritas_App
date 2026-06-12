@@ -44,6 +44,7 @@ struct NuevaConsultaView: View {
 
     // Shared
     @State private var diagnostico = ""
+    @State private var guardando = false
 
     private var formularioValido: Bool {
         let doctorOk = doctorPrevio != nil || doctorSeleccionado != nil
@@ -205,6 +206,8 @@ struct NuevaConsultaView: View {
     }
 
     private func guardarConsulta() {
+        guard !guardando else { return }
+        guardando = true
         let doctorID   = doctorPrevio?.dbID ?? doctorSeleccionado?.dbID ?? 0
         let brigadaID  = appState.brigadaActiva?.dbID ?? 0
         let tipoPaciente = imss ? "IMSS" : "General"
@@ -248,6 +251,7 @@ struct NuevaConsultaView: View {
             await patientVM.syncConsultasOnly(context: modelContext, appState: appState)
         }
 
+        guardando = false
         if let onSaved { onSaved() } else { dismiss() }
     }
 

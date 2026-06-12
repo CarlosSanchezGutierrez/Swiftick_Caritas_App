@@ -154,6 +154,9 @@ struct NuevaBrigadaView: View {
                                     if let idx = appState.brigadas.firstIndex(where: { $0.id == nuevaID }) {
                                         appState.brigadas[idx].dbID = id
                                     }
+                                    if appState.brigadaActiva?.id == nuevaID {
+                                        appState.brigadaActiva?.dbID = id
+                                    }
                                 }
                             }
                         }
