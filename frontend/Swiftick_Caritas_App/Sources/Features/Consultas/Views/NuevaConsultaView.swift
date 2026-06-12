@@ -15,6 +15,7 @@ struct NuevaConsultaView: View {
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject var appState: AppState
     @StateObject private var vm = consultaVM()
+    @StateObject private var patientVM = PatientIntakeViewModel()
 
     @Query(sort: \Doctor.nombre) private var doctores: [Doctor]
 
@@ -238,6 +239,8 @@ struct NuevaConsultaView: View {
         )
         consulta.signosID = signosLocal?.id
         try? modelContext.save()
+
+        Task { await patientVM.syncAll(context: modelContext, appState: appState) }
 
         if let onSaved { onSaved() } else { dismiss() }
     }
