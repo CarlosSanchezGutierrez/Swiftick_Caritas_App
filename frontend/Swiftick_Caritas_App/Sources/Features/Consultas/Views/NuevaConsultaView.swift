@@ -245,7 +245,7 @@ struct NuevaConsultaView: View {
                 consulta.medicamentosID = await vm.addMedicamento(nombre: medicina)
                 try? modelContext.save()
             }
-            await patientVM.syncAll(context: modelContext, appState: appState)
+            await patientVM.syncConsultasOnly(context: modelContext, appState: appState)
         }
 
         if let onSaved { onSaved() } else { dismiss() }

@@ -34,6 +34,14 @@ final class PatientIntakeViewModel: ObservableObject {
         await syncConsultas(context: context)
     }
 
+    func syncConsultasOnly(context: ModelContext, appState: AppState) async {
+        guard !appState.isSyncing else { return }
+        appState.isSyncing = true
+        defer { appState.isSyncing = false }
+        patchConsultaPacienteIDs(context: context)
+        await syncConsultas(context: context)
+    }
+
     // MARK: - Private sync steps
 
     private func syncDoctors(context: ModelContext) async {
@@ -161,7 +169,7 @@ final class PatientIntakeViewModel: ObservableObject {
             FetchDescriptor<ConsultaLocal>(predicate: #Predicate { !$0.isSynced })
         ) else { return }
         let vm = consultaVM()
-        for consulta in unsynced where consulta.pacienteID > 0 {
+        for consulta in unsynced where consulta.pacienteID > 0 && consulta.doctorID > 0 && consulta.brigadaID > 0 {
             if let id = await vm.addServicio(
                 pacienteID: consulta.pacienteID,
                 doctorID: consulta.doctorID,
