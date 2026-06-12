@@ -35,8 +35,8 @@ struct ContentView: View {
         !reporteIsLoading
     }
 
-    private var currentBrigade: BrigadeInfo {
-        appState.brigadaActiva?.brigadeInfo ?? MockData.currentBrigade
+    private var currentBrigade: BrigadeInfo? {
+        appState.brigadaActiva?.brigadeInfo
     }
 
     @Query private var allPacientes: [Paciente]

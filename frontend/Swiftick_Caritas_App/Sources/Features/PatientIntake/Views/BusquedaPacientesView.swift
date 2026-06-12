@@ -18,6 +18,7 @@ struct BusquedaPacientesView: View {
 
     @State var busqueda = ""
     @State private var irAgregarPaciente = false
+    @State private var alertaBrigada = false
 
     private var pendingCount: Int {
         pacientes.filter { !$0.isSynced }.count + allDoctores.filter { !$0.isSynced }.count
@@ -38,7 +39,11 @@ struct BusquedaPacientesView: View {
                 TextField("Buscar paciente", text: $busqueda)
                     .textFieldStyle(.roundedBorder)
                 Button {
-                    irAgregarPaciente = true
+                    if appState.brigadaActiva == nil {
+                        alertaBrigada = true
+                    } else {
+                        irAgregarPaciente = true
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .font(.largeTitle)
@@ -46,6 +51,11 @@ struct BusquedaPacientesView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Color(red: 0/255, green: 156/255, blue: 166/255))
+                .alert("Sin brigada activa", isPresented: $alertaBrigada) {
+                    Button("Entendido", role: .cancel) {}
+                } message: {
+                    Text("Selecciona una brigada activa en Brigadas antes de registrar pacientes.")
+                }
             }
 
             List {

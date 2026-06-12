@@ -8,7 +8,9 @@ import SwiftData
 
 struct VistaPaciente: View {
     var paciente: Paciente
+    @EnvironmentObject var appState: AppState
     @State private var cambiarPantalla = false
+    @State private var alertaBrigada = false
 
     @Query private var todasConsultas: [ConsultaLocal]
     @Query private var doctores: [Doctor]
@@ -50,7 +52,11 @@ struct VistaPaciente: View {
                     }
 
                     Button {
-                        cambiarPantalla = true
+                        if appState.brigadaActiva == nil {
+                            alertaBrigada = true
+                        } else {
+                            cambiarPantalla = true
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .foregroundStyle(Color(red: 161/255, green: 90/255, blue: 149/255))
@@ -62,6 +68,11 @@ struct VistaPaciente: View {
                     .fontWeight(.semibold)
                     .background(Color.white.opacity(0.8))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .alert("Sin brigada activa", isPresented: $alertaBrigada) {
+                        Button("Entendido", role: .cancel) {}
+                    } message: {
+                        Text("Selecciona una brigada activa en Brigadas antes de registrar consultas.")
+                    }
                 }
                 .padding()
                 .background(Color(red: 0/255, green: 156/255, blue: 166/255).opacity(0.4))
@@ -184,4 +195,5 @@ private struct ConsultaCardView: View {
         )
     }
     .modelContainer(for: [Paciente.self, Doctor.self, ConsultaLocal.self], inMemory: true)
+    .environmentObject(AppState())
 }
