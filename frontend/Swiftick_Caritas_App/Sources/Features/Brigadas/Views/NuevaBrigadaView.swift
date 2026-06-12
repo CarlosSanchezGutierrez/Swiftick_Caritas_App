@@ -130,17 +130,19 @@ struct NuevaBrigadaView: View {
                     let municipioID = ciudadSeleccionada?.municipio?.id ?? 0
                     let nuevaID = nueva.id
 
-                    if appState.isOffline {
-                        _ = brigadasVM.storeBrigada(
-                            context: modelContext,
-                            doctorID: doctorID,
-                            serviciosDisp: serviciosStr,  // count of selected services
-                            fechaOp: fecha,
-                            municipioID: municipioID,
-                            ciudadID: ciudadID,
-                            colonia: nombre
-                        )
-                    } else {
+                    // Always store locally so the dashboard @Query reflects it immediately
+                    let localBrigada = brigadasVM.storeBrigada(
+                        context: modelContext,
+                        doctorID: doctorID,
+                        serviciosDisp: serviciosStr,
+                        fechaOp: fecha,
+                        municipioID: municipioID,
+                        ciudadID: ciudadID,
+                        colonia: nombre
+                    )
+                    try? modelContext.save()
+
+                    if !appState.isOffline {
                         Task {
                             if let id = await brigadasVM.addBrigada(
                                 doctorID: doctorID,
@@ -151,6 +153,9 @@ struct NuevaBrigadaView: View {
                                 colonia: nombre
                             ) {
                                 await MainActor.run {
+                                    localBrigada.id = id
+                                    localBrigada.isSynced = true
+                                    try? modelContext.save()
                                     if let idx = appState.brigadas.firstIndex(where: { $0.id == nuevaID }) {
                                         appState.brigadas[idx].dbID = id
                                     }
