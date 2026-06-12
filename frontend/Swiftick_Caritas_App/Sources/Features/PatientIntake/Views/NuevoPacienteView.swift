@@ -6,6 +6,10 @@
 import SwiftUI
 import SwiftData
 
+private enum DoctorSelection: Hashable {
+    case ninguno, nuevo, id(UUID)
+}
+
 struct NuevoPacienteView: View {
     var paciente: Paciente? = nil
     var navegacionActiva: Binding<Bool> = .constant(true)
@@ -36,6 +40,7 @@ struct NuevoPacienteView: View {
     @State private var numCasa = ""
 
     @Query(sort: \paisLocal.nombre) private var paises: [paisLocal]
+    @Query(sort: \Doctor.nombre)   private var doctores: [Doctor]
 
     private var estadosFiltrados: [estadoLocal] {
         (paises.first { $0.nombre == pais }?.estados ?? [])
@@ -49,6 +54,8 @@ struct NuevoPacienteView: View {
         (municipiosFiltrados.first { $0.nombre == municipio }?.ciudades ?? [])
             .sorted { $0.nombre < $1.nombre }
     }
+
+    @State private var doctorSelection = DoctorSelection.ninguno
 
     @State private var nombreDoc = ""
     @State private var apellidoPDOC = ""
@@ -338,37 +345,72 @@ struct NuevoPacienteView: View {
                 .font(.title2)
                 .fontWeight(.bold)
 
-            campoTexto("Nombre(s)", texto: $nombreDoc, placeholder: "Ingrese el nombre", error: errorNombreDoc)
-            campoTexto("Apellido paterno", texto: $apellidoPDOC, placeholder: "Ingrese el apellido paterno", error: errorApellidoPDoc)
-            campoTexto("Apellido materno", texto: $apellidoMDOC, placeholder: "Ingrese el apellido materno", error: errorApellidoMDoc)
-
             VStack(alignment: .leading, spacing: 8) {
-                Text("Género").fontWeight(.semibold)
-                Picker("Género", selection: $generoDoc) {
-                    Text("Seleccionar").tag("")
-                    ForEach(opcionesGenero, id: \.self) { Text($0).tag($0) }
+                Text("Doctor").fontWeight(.semibold)
+                Picker("Doctor", selection: $doctorSelection) {
+                    Text("Seleccionar").tag(DoctorSelection.ninguno)
+                    Text("+ Nuevo Doctor").tag(DoctorSelection.nuevo)
+                    ForEach(doctores) { doc in
+                        Text("\(doc.nombre) \(doc.apellidoP)").tag(DoctorSelection.id(doc.doctorID))
+                    }
                 }
                 .pickerStyle(.menu)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
                 .background(Color.gray.opacity(0.1))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(errorGeneroDoc ? Color.red : Color.clear, lineWidth: 2))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                if errorGeneroDoc { errorCaption }
+                if doctorSelection == .ninguno && errorNombreDoc {
+                    Text("Selecciona o crea un doctor").foregroundStyle(.red).font(.caption)
+                }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Fecha de nacimiento").fontWeight(.semibold)
-                DatePicker("", selection: $fechaNacDoc, displayedComponents: .date)
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
+            if case .id(let uuid) = doctorSelection,
+               let doc = doctores.first(where: { $0.doctorID == uuid }) {
+                HStack {
+                    Image(systemName: "person.fill")
+                        .foregroundStyle(Color(red: 0/255, green: 156/255, blue: 166/255))
+                    Text("\(doc.nombre) \(doc.apellidoP) \(doc.apellidoM)")
+                        .fontWeight(.semibold)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(red: 0/255, green: 156/255, blue: 166/255).opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            if doctorSelection == .nuevo {
+                campoTexto("Nombre(s)", texto: $nombreDoc, placeholder: "Ingrese el nombre", error: errorNombreDoc)
+                campoTexto("Apellido paterno", texto: $apellidoPDOC, placeholder: "Ingrese el apellido paterno", error: errorApellidoPDoc)
+                campoTexto("Apellido materno", texto: $apellidoMDOC, placeholder: "Ingrese el apellido materno", error: errorApellidoMDoc)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Género").fontWeight(.semibold)
+                    Picker("Género", selection: $generoDoc) {
+                        Text("Seleccionar").tag("")
+                        ForEach(opcionesGenero, id: \.self) { Text($0).tag($0) }
+                    }
+                    .pickerStyle(.menu)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
                     .background(Color.gray.opacity(0.1))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(errorGeneroDoc ? Color.red : Color.clear, lineWidth: 2))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
+                    if errorGeneroDoc { errorCaption }
+                }
 
-            Toggle("¿Se encuentra realizando prácticas?", isOn: $realizandoPrac)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Fecha de nacimiento").fontWeight(.semibold)
+                    DatePicker("", selection: $fechaNacDoc, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                Toggle("¿Se encuentra realizando prácticas?", isOn: $realizandoPrac)
+            }
         }
         .padding()
         .background(Color.white)
@@ -450,15 +492,26 @@ struct NuevoPacienteView: View {
     }
 
     private func validarFormulario() -> Bool {
-        errorNombre      = nombre.trimmingCharacters(in: .whitespaces).isEmpty
-        errorApellidoP   = apellidoP.trimmingCharacters(in: .whitespaces).isEmpty
-        errorApellidoM   = apellidoM.trimmingCharacters(in: .whitespaces).isEmpty
-        errorGenero      = genero.isEmpty
-        errorFamiliares  = familiares.isEmpty
-        errorNombreDoc   = nombreDoc.trimmingCharacters(in: .whitespaces).isEmpty
-        errorApellidoPDoc = apellidoPDOC.trimmingCharacters(in: .whitespaces).isEmpty
-        errorApellidoMDoc = apellidoMDOC.trimmingCharacters(in: .whitespaces).isEmpty
-        errorGeneroDoc   = generoDoc.isEmpty
+        errorNombre     = nombre.trimmingCharacters(in: .whitespaces).isEmpty
+        errorApellidoP  = apellidoP.trimmingCharacters(in: .whitespaces).isEmpty
+        errorApellidoM  = apellidoM.trimmingCharacters(in: .whitespaces).isEmpty
+        errorGenero     = genero.isEmpty
+        errorFamiliares = familiares.isEmpty
+
+        switch doctorSelection {
+        case .nuevo:
+            errorNombreDoc    = nombreDoc.trimmingCharacters(in: .whitespaces).isEmpty
+            errorApellidoPDoc = apellidoPDOC.trimmingCharacters(in: .whitespaces).isEmpty
+            errorApellidoMDoc = apellidoMDOC.trimmingCharacters(in: .whitespaces).isEmpty
+            errorGeneroDoc    = generoDoc.isEmpty
+        case .id:
+            errorNombreDoc = false; errorApellidoPDoc = false
+            errorApellidoMDoc = false; errorGeneroDoc = false
+        case .ninguno:
+            // Re-use errorNombreDoc as the "no doctor selected" flag
+            errorNombreDoc = true
+            errorApellidoPDoc = false; errorApellidoMDoc = false; errorGeneroDoc = false
+        }
 
         let hayErrores = errorNombre || errorApellidoP || errorApellidoM || errorGenero ||
             errorFamiliares || errorNombreDoc || errorApellidoPDoc || errorApellidoMDoc || errorGeneroDoc
@@ -513,14 +566,21 @@ struct NuevoPacienteView: View {
 
     @discardableResult
     private func guardarDoctor() -> Doctor? {
-        guard !nombreDoc.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let doctor = Doctor(
-            nombre: nombreDoc, apellidoP: apellidoPDOC, apellidoM: apellidoMDOC,
-            genero: generoDoc, fechaNac: fechaNacDoc, realizandoPrac: realizandoPrac
-        )
-        modelContext.insert(doctor)
-        try? modelContext.save()
-        return doctor
+        switch doctorSelection {
+        case .id(let uuid):
+            return doctores.first { $0.doctorID == uuid }
+        case .nuevo:
+            guard !nombreDoc.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+            let doctor = Doctor(
+                nombre: nombreDoc, apellidoP: apellidoPDOC, apellidoM: apellidoMDOC,
+                genero: generoDoc, fechaNac: fechaNacDoc, realizandoPrac: realizandoPrac
+            )
+            modelContext.insert(doctor)
+            try? modelContext.save()
+            return doctor
+        case .ninguno:
+            return nil
+        }
     }
 }
 

@@ -34,6 +34,13 @@ final class PatientIntakeViewModel: ObservableObject {
         await syncConsultas(context: context)
     }
 
+    func syncNewDoctor(_ doctor: Doctor, context: ModelContext) async {
+        if await pushDoctor(doctor) {
+            doctor.isSynced = true
+            try? context.save()
+        }
+    }
+
     func syncConsultasOnly(context: ModelContext, appState: AppState) async {
         guard !appState.isSyncing else { return }
         appState.isSyncing = true

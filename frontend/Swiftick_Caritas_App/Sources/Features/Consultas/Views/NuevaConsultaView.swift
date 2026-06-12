@@ -6,6 +6,10 @@
 import SwiftUI
 import SwiftData
 
+private enum DoctorSelection: Hashable {
+    case ninguno, nuevo, id(UUID)
+}
+
 struct NuevaConsultaView: View {
     var paciente: Paciente
     var doctorPrevio: Doctor? = nil
@@ -21,8 +25,18 @@ struct NuevaConsultaView: View {
 
     let servicios = ["Consulta General", "Entrega de Medicamentos", "Optometría", "Consulta Dental"]
     let tallas    = ["XXS", "XS", "S", "M", "L", "XL", "XXL"]
+    let opcionesGenero = ["Masculino", "Femenino", "No binario", "Prefiero no decir"]
 
-    @State private var doctorSeleccionado: Doctor? = nil
+    // Doctor selection
+    @State private var doctorSelection = DoctorSelection.ninguno
+    // New doctor form
+    @State private var nuevoNombreDoc      = ""
+    @State private var nuevoApellidoPDoc   = ""
+    @State private var nuevoApellidoMDoc   = ""
+    @State private var nuevoGeneroDoc      = ""
+    @State private var nuevoFechaNacDoc    = Date()
+    @State private var nuevoRealizandoPrac = false
+
     @State private var servicioElegido = ""
     @State private var folio: UUID     = UUID()
     @State private var fecha: Date     = .now
@@ -47,7 +61,19 @@ struct NuevaConsultaView: View {
     @State private var guardando = false
 
     private var formularioValido: Bool {
-        let doctorOk = doctorPrevio != nil || doctorSeleccionado != nil
+        let doctorOk: Bool
+        if let _ = doctorPrevio {
+            doctorOk = true
+        } else {
+            switch doctorSelection {
+            case .ninguno: return false
+            case .id:      doctorOk = true
+            case .nuevo:
+                doctorOk = !nuevoNombreDoc.trimmingCharacters(in: .whitespaces).isEmpty &&
+                           !nuevoApellidoPDoc.trimmingCharacters(in: .whitespaces).isEmpty &&
+                           !nuevoGeneroDoc.isEmpty
+            }
+        }
         guard doctorOk, !servicioElegido.isEmpty else { return false }
         switch servicioElegido {
         case "Consulta General":
@@ -72,14 +98,41 @@ struct NuevaConsultaView: View {
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    Picker("Selecciona un doctor", selection: $doctorSeleccionado) {
-                        Text("Seleccionar...").tag(nil as Doctor?)
+                    Picker("Selecciona un doctor", selection: $doctorSelection) {
+                        Text("Seleccionar...").tag(DoctorSelection.ninguno)
+                        Text("+ Nuevo Doctor").tag(DoctorSelection.nuevo)
                         ForEach(doctores) { doc in
-                            Text("\(doc.nombre) \(doc.apellidoP)").tag(doc as Doctor?)
+                            Text("\(doc.nombre) \(doc.apellidoP)").tag(DoctorSelection.id(doc.doctorID))
                         }
                     }
                     .pickerStyle(.menu)
                     .font(.gotham(.book, size: 20))
+
+                    if doctorSelection == .nuevo {
+                        LabeledContent("Nombre(s)") {
+                            TextField("Ingresar nombre...", text: $nuevoNombreDoc)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        LabeledContent("Apellido paterno") {
+                            TextField("Ingresar apellido...", text: $nuevoApellidoPDoc)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        LabeledContent("Apellido materno") {
+                            TextField("Ingresar apellido...", text: $nuevoApellidoMDoc)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        Picker("Género", selection: $nuevoGeneroDoc) {
+                            Text("Seleccionar").tag("")
+                            ForEach(opcionesGenero, id: \.self) { Text($0).tag($0) }
+                        }
+                        .pickerStyle(.menu)
+                        .font(.gotham(.book, size: 20))
+                        DatePicker("Fecha de nacimiento", selection: $nuevoFechaNacDoc, displayedComponents: .date)
+                            .font(.gotham(.book, size: 20))
+                        Toggle("¿Realizando prácticas?", isOn: $nuevoRealizandoPrac)
+                            .font(.gotham(.book, size: 20))
+                            .tint(Color(red: 0/255, green: 156/255, blue: 166/255))
+                    }
                 }
             }
 
@@ -208,9 +261,29 @@ struct NuevaConsultaView: View {
     private func guardarConsulta() {
         guard !guardando else { return }
         guardando = true
-        let doctorID   = doctorPrevio?.dbID ?? doctorSeleccionado?.dbID ?? 0
-        let brigadaID  = appState.brigadaActiva?.dbID ?? 0
+
         let tipoPaciente = imss ? "IMSS" : "General"
+        let brigadaID    = appState.brigadaActiva?.dbID ?? 0
+
+        // Resolve doctorID and optionally create a new local Doctor
+        var doctorID: Int
+        var newDoctor: Doctor? = nil
+        if let prev = doctorPrevio {
+            doctorID = prev.dbID
+        } else if case .id(let uuid) = doctorSelection,
+                  let doc = doctores.first(where: { $0.doctorID == uuid }) {
+            doctorID = doc.dbID
+        } else {
+            let doc = Doctor(
+                nombre: nuevoNombreDoc, apellidoP: nuevoApellidoPDoc,
+                apellidoM: nuevoApellidoMDoc, genero: nuevoGeneroDoc,
+                fechaNac: nuevoFechaNacDoc, realizandoPrac: nuevoRealizandoPrac
+            )
+            modelContext.insert(doc)
+            try? modelContext.save()
+            newDoctor = doc
+            doctorID = 0
+        }
 
         var signosLocal: SignosFisicosLocal? = nil
         if servicioElegido == "Consulta General" {
@@ -244,6 +317,12 @@ struct NuevaConsultaView: View {
         try? modelContext.save()
 
         Task {
+            // If a new doctor was just created, push it first and patch doctorID
+            if let doc = newDoctor {
+                await patientVM.syncNewDoctor(doc, context: modelContext)
+                consulta.doctorID = doc.dbID
+                try? modelContext.save()
+            }
             if servicioElegido == "Entrega de Medicamentos", !medicina.trimmingCharacters(in: .whitespaces).isEmpty {
                 consulta.medicamentosID = await vm.addMedicamento(nombre: medicina)
                 try? modelContext.save()
