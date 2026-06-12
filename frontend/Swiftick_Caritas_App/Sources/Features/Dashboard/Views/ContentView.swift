@@ -50,7 +50,7 @@ struct ContentView: View {
 
     private var summaryMetrics: [SummaryMetric] {
         let comunidades = Set(allBrigadas.compactMap { $0.colonia }).count
-        [
+        return [
             SummaryMetric(icon: "person.2",          number: "\(allPacientes.count)", title: "Pacientes"),
             SummaryMetric(icon: "list.clipboard",     number: "\(allConsultas.count)", title: "Consultas"),
             SummaryMetric(icon: "waveform.path.ecg",  number: "\(Set(allConsultas.map { $0.tipoServicio }).count)", title: "Servicios"),
