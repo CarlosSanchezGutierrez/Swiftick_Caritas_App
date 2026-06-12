@@ -20,8 +20,22 @@ class consultaVM: ObservableObject {
         } catch { return [] }
     }
 
+    func addMedicamento(nombre: String) async -> Int? {
+        guard let url = URL(string: "\(baseURL)/medicamentos") else { return nil }
+        do {
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try JSONEncoder().encode(["nombre": nombre])
+            let (data, _) = try await URLSession.shared.data(for: req)
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let id = json["id"] as? Int { return id }
+            return nil
+        } catch { return nil }
+    }
+
     func addServicio(pacienteID: Int, doctorID: Int, brigadaID: Int,
-                     signosID: Int, medicamentosID: Int, cantMedicina: Int,
+                     signosID: Int?, medicamentosID: Int?, cantMedicina: Int,
                      tipoServicio: String, fechaServicio: Date,
                      imss: Bool, tipoPaciente: String) async -> Int? {
         guard let url = URL(string: "\(baseURL)/servicios") else { return nil }

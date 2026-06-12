@@ -26,8 +26,8 @@ struct NuevoServicioAPI: Codable {
     let pacienteID: Int
     let doctorID: Int
     let brigadaID: Int
-    let signosID: Int
-    let medicamentosID: Int
+    let signosID: Int?
+    let medicamentosID: Int?
     let cantMedicina: Int
     let tipoServicio: String
     let fechaServicio: String

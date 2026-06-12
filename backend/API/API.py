@@ -142,8 +142,8 @@ class NuevoServicio(BaseModel):
     pacienteID: int
     doctorID: int
     brigadaID: int
-    signosID: int
-    medicamentosID: int
+    signosID: Optional[int] = None
+    medicamentosID: Optional[int] = None
     cantMedicina: int
     tipoServicio: str
     fechaServicio: date

@@ -240,7 +240,13 @@ struct NuevaConsultaView: View {
         consulta.signosID = signosLocal?.id
         try? modelContext.save()
 
-        Task { await patientVM.syncAll(context: modelContext, appState: appState) }
+        Task {
+            if servicioElegido == "Entrega de Medicamentos", !medicina.trimmingCharacters(in: .whitespaces).isEmpty {
+                consulta.medicamentosID = await vm.addMedicamento(nombre: medicina)
+                try? modelContext.save()
+            }
+            await patientVM.syncAll(context: modelContext, appState: appState)
+        }
 
         if let onSaved { onSaved() } else { dismiss() }
     }
